@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Learning Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #C9B59C 0%, #D9CFC7 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            background: #F9F8F6;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #C9B59C;
+        }
+        
+        .user-info h2 {
+            color: #4A4035;
+            font-size: 24px;
+        }
+        
+        .user-info p {
+            color: #6B5D52;
+            font-size: 14px;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: #C9B59C;
+            color: #F9F8F6;
+        }
+        
+        .btn-primary:hover {
+            background: #B8A585;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #EFE9E3;
+            color: #4A4035;
+        }
+        
+        .btn-secondary:hover {
+            background: #D9CFC7;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            color: #4A4035;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 50px;
+        }
+        
+        .subject-card {
+            background: #F9F8F6;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-decoration: none;
+            color: #4A4035;
+        }
+        
+        .subject-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .subject-icon {
+            font-size: 50px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 70px;
+        }
+        
+        /* .subject-icon-svg {
+            width: 50px;
+            height: 50px;
+            stroke: #C9B59C;
+            stroke-width: 2;
+        } */
+        .subject-icon img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+        /* .subject-icon img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            background: white;
+            padding: 12px;
+            border-radius: 50%;  /* Makes it a circle */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);  /* Subtle depth */
+        } */
+        
+        .subject-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .conversations-section {
+            background: #F9F8F6;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .conversations-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #D9CFC7;
+        }
+        
+        .conversations-header h3 {
+            color: #4A4035;
+            font-size: 24px;
+        }
+        
+        .conversation-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .conversation-item {
+            background: white;
+            border: 1px solid #D9CFC7;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .conversation-item:hover {
+            border-color: #C9B59C;
+            box-shadow: 0 3px 10px rgba(201, 181, 156, 0.2);
+        }
+        
+        .conversation-info {
+            flex: 1;
+        }
+        
+        .conversation-title {
+            color: #4A4035;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .conversation-meta {
+            color: #6B5D52;
+            font-size: 13px;
+        }
+        
+        .conversation-subject {
+            display: inline-block;
+            background: #C9B59C;
+            color: #F9F8F6;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6B5D52;
+        }
+        
+        .empty-state-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        
+        .empty-state h4 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #4A4035;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                {% if user.picture %}
+                <img src="{{ user.picture }}" alt="User" class="user-avatar">
+                {% else %}
+                <div class="user-avatar" style="background: #B7B7A4; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                    {{ user.name[0] if user.name else '?' }}
+                </div>
+                {% endif %}
+                <div class="user-info">
+                    <h2>Welcome back, {{ user.name or 'Student' }}!</h2>
+                    <p>{{ user.email }}</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="/" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <img src="{{ url_for('static', filename='images/home.png') }}" alt="" style="width: 18px; height: 18px;">
+                    Home
+                </a>
+                <a href="/logout" class="btn btn-secondary">Logout</a>
+            </div>
+        </div>
+        
+        <h2 class="section-title">Start a New Session</h2>
+        <div class="subjects-grid">
+            {% for key, subject in subjects.items() %}
+            <a href="/chat/{{ key }}" class="subject-card">
+                <div class="subject-icon">
+                    <img src="{{ url_for('static', filename='images/' + subject.icon) }}" alt="{{ subject.name }}">
+                </div>
+                <div class="subject-name">{{ subject.name }}</div>
+            </a>
+            {% endfor %}
+        </div>
+        
+        <div class="conversations-section">
+            <div class="conversations-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <img src="{{ url_for('static', filename='images/convers.png') }}" alt="" style="width: 28px; height: 28px;">
+                    Your Recent Conversations
+                </h3>
+            </div>
+            {% if conversations %}
+            <div class="conversation-list">
+                {% for conv in conversations %}
+                <div class="conversation-item" onclick="openConversation('{{ conv.subject }}', {{ conv.id }})">
+                    <div class="conversation-info">
+                        <div class="conversation-title">{{ conv.title or 'Untitled Conversation' }}</div>
+                        <div class="conversation-meta">
+                            Last updated: {{ conv.updated_at }}
+                            <span class="conversation-subject">{{ subjects[conv.subject].name }}</span>
+                        </div>
+                    </div>
+                    <div>→</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                <img src="{{ url_for('static', filename='images/bubble.png') }}" alt="" style="max-width: 80px;">
+            </div>
+    <h4>No conversations yet</h4>
+    <p>Start learning by selecting a subject above!</p>
+</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function openConversation(subject, conversationId) {
+            window.location.href = `/chat/${subject}?conversation_id=${conversationId}`;
+        }
+    </script>
+</body>
+</html>
