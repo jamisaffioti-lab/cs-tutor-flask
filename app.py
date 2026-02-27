@@ -7,9 +7,11 @@ from datetime import datetime
 import sqlite3
 from functools import wraps
 import json
+import time
+from anthropic import Anthropic
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(16))
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Google OAuth Configuration
@@ -18,8 +20,30 @@ GOOGLE_CLIENT_ID = "your-google-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "your-google-client-secret"
 
 # Your API key
-api_key = "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"
+api_key = os.environ.get('ANTHROPIC_API_KEY')
+if not api_key:
+    raise RuntimeError('ANTHROPIC_API_KEY environment variable not set')
 client = anthropic.Anthropic(api_key=api_key)
+
+def chat_with_retry(messages, model="claude-sonnet-4-20250514", max_tokens=1000, max_retries=3):
+    """Call Anthropic API with automatic retry on overload"""
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(  # ← FIXED: was calling itself
+                model=model,
+                max_tokens=max_tokens,
+                messages=messages
+            )
+            return response
+        except Exception as e:
+            error_msg = str(e).lower()
+            if ("overloaded" in error_msg or "529" in error_msg) and attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 2  # 2, 4, 6 seconds
+                print(f"API overloaded, retry {attempt + 1}/{max_retries} in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                # Last attempt or different error - raise it
+                raise e
 
 # Initialize database
 def init_db():
@@ -412,13 +436,8 @@ def api_chat():
             "content": user_message
         })
         
-        # Get response from Claude
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=2048,
-            system=SUBJECTS[subject]['system_prompt'],
-            messages=messages
-        )
+        # Get response from Claude with retry
+        response = chat_with_retry(messages)
         
         # Extract assistant's response
         assistant_message = response.content[0].text
@@ -456,11 +475,25 @@ def api_chat():
         })
         
     except Exception as e:
+        error_msg = str(e).lower()
         print(f"Chat error: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
+        
+        # User-friendly error messages
+        if "overloaded" in error_msg or "529" in error_msg:
+            return jsonify({
+                'success': False,
+                'error': "The AI is experiencing high demand right now. Please try again in a moment! 🔄"
+            }), 503
+        elif "api key" in error_msg:
+            return jsonify({
+                'success': False,
+                'error': "API configuration error. Please contact support."
+            }), 500
+        else:
+            return jsonify({
+                'success': False,
+                'error': f"Sorry, an error occurred. Please try again."
+            }), 500
 
 @app.route('/api/chat/file', methods=['POST'])
 @login_required
@@ -592,13 +625,8 @@ def api_chat_file():
         # Add to messages for API call
         messages.append(api_message)
         
-        # Get response from Claude
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=2048,
-            system=SUBJECTS[subject]['system_prompt'],
-            messages=messages
-        )
+        # Get response from Claude with retry
+        response = chat_with_retry(messages)
         
         # Extract response
         assistant_message = response.content[0].text
@@ -637,11 +665,19 @@ def api_chat_file():
         })
         
     except Exception as e:
+        error_msg = str(e).lower()
         print(f"File chat error: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
+        
+        if "overloaded" in error_msg or "529" in error_msg:
+            return jsonify({
+                'success': False,
+                'error': "The AI is experiencing high demand right now. Please try again in a moment! 🔄"
+            }), 503
+        else:
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
 
 @app.route('/api/practice', methods=['POST'])
 @login_required
@@ -684,25 +720,8 @@ def api_practice():
             "content": f"I'm studying {SUBJECTS[subject]['name']}. Can you recommend specific practice problems and resources I can use? Include links to College Board resources if this is an AP course, and other reputable practice sites like CodeHS, CodingBat, etc."
         }]
         
-        # Try WITH web search first
-        try:
-            response = client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=2048,
-                tools=[{
-                    "type": "web_search_20250305",
-                    "name": "web_search"
-                }],
-                messages=practice_messages
-            )
-        except Exception as web_error:
-            # If web search fails, try without it
-            print(f"Web search failed: {web_error}")
-            response = client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=2048,
-                messages=practice_messages
-            )
+        # Get response with retry
+        response = chat_with_retry(practice_messages)
         
         # Extract response text
         response_text = ""
@@ -846,12 +865,6 @@ def api_summary():
         
         messages = json.loads(conv['messages'])
         
-        # Add user's summary request
-        messages.append({
-            "role": "user",
-            "content": "Can you provide a summary of our conversation?"
-        })
-        
         # Create a summary prompt
         summary_messages = messages.copy()
         summary_messages.append({
@@ -864,16 +877,15 @@ def api_summary():
 Format this as a clear, student-friendly summary."""
         })
         
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=500,
-            system="You are a helpful tutor creating a study summary.",
-            messages=summary_messages
-        )
+        response = chat_with_retry(summary_messages)
         
         summary = response.content[0].text
         
         # Add summary response to conversation
+        messages.append({
+            "role": "user",
+            "content": "Can you provide a summary of our conversation?"
+        })
         messages.append({
             "role": "assistant",
             "content": f"📝 Session Summary\n\n{summary}"
