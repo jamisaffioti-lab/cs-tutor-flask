@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS Learning Hub - Select Your Course</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #C9B59C 0%, #D9CFC7 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: #4A4035;
+            margin-bottom: 50px;
+        }
+        
+        header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        header p {
+            font-size: 18px;
+            color: #6B5D52;
+        }
+        
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .subject-card {
+            background: #F9F8F6;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-decoration: none;
+            color: #4A4035;
+        }
+        
+        .subject-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            background: #EFE9E3;
+        }
+        
+        .subject-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+        
+        /* .subject-icon-svg {
+            width: 60px;
+            height: 60px;
+            stroke: #C9B59C;
+            stroke-width: 2;
+        } */
+        .subject-icon img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        } 
+        /* .subject-icon img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            background: white;
+            padding: 12px;
+            border-radius: 50%;  /* Makes it a circle */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);  /* Subtle depth */
+        } */
+        
+        .subject-name {
+            font-size: 22px;
+            font-weight: 600;
+            color: #4A4035;
+        }
+        
+        .subject-description {
+            font-size: 14px;
+            color: #6B5D52;
+            margin-top: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            color: #6B5D52;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(107, 93, 82, 0.3);
+        }
+        
+        footer p {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="{{ url_for('static', filename='images/noros-logo-white.png') }}" style="padding: 4px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <h1>Ascent Scholars</h1>
+            <p>Select your course to start learning with your personalized tutor</p>
+            {% if user %}
+            <div style="margin-top: 15px;">
+                <a href="/dashboard" style="color: #4A4035; text-decoration: none; background: rgba(249,248,246,0.3); padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;">
+                    <img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="" style="width: 20px; height: 20px">
+                    My Dashboard
+                </a>
+                <a href="/logout" style="color: #4A4035; text-decoration: none; margin-left: 10px;">Logout</a>
+            </div>
+            {% endif %}
+        </header>
+        
+        <div class="subjects-grid">
+            {% for key, subject in subjects.items() %}
+            <a href="/chat/{{ key }}" class="subject-card">
+                <div class="subject-icon">
+                    <img src="{{ url_for('static', filename='images/' + subject.icon) }}" alt="{{ subject.name }}">
+                </div>
+                <div class="subject-name">{{ subject.name }}</div>
+            </a>
+            {% endfor %}
+        </div>
+        
+        <footer>
+            <p>Built with <img src="{{ url_for('static', filename='images/heart.png') }}" alt="love" style="width: 20px; height: 20px; vertical-align: middle; background: white; padding: 3px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);"> for computer science students</p>
+        </footer>
+    </div>
+</body>
+</html>

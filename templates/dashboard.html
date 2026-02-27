@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Learning Dashboard</title>
+    <title>my learning dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
         * {
             margin: 0;
@@ -12,22 +16,58 @@
         }
         
         body {
-            /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
             font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #C9B59C 0%, #D9CFC7 100%);
+            color: #ffffff;
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+        }
+
+        /* Mountain background */
+        .mountain-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('{{ url_for("static", filename="images/noros_life.png") }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: -1;
+        }
+
+        .mountain-background::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .base-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            z-index: -2;
         }
         
         .header {
-            background: #F9F8F6;
+            background: rgba(52, 73, 94, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 20px 30px;
             margin-bottom: 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            backdrop-filter: blur(20px);
         }
         
         .header-left {
@@ -40,16 +80,19 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            border: 2px solid #C9B59C;
+            border: 2px solid #8cc9f0;
         }
         
         .user-info h2 {
-            color: #4A4035;
-            font-size: 24px;
+            font-family: 'Orbitron', sans-serif;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
         
         .user-info p {
-            color: #6B5D52;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 14px;
         }
         
@@ -60,43 +103,53 @@
         
         .btn {
             padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
+            border-radius: 25px;
+            font-weight: 700;
             cursor: pointer;
             text-decoration: none;
             transition: all 0.2s;
             border: none;
             font-size: 14px;
+            font-family: 'Courier New', monospace;
         }
         
         .btn-primary {
-            background: #C9B59C;
-            color: #F9F8F6;
+            background: rgba(140, 201, 240, 0.25);
+            border: 1px solid rgba(140, 201, 240, 0.4);
+            color: #ffffff;
         }
         
         .btn-primary:hover {
-            background: #B8A585;
+            background: rgba(140, 201, 240, 0.35);
             transform: translateY(-2px);
         }
         
         .btn-secondary {
-            background: #EFE9E3;
-            color: #4A4035;
+            background: rgba(140, 201, 240, 0.15);
+            border: 1px solid rgba(140, 201, 240, 0.3);
+            color: #8cc9f0;
         }
         
         .btn-secondary:hover {
-            background: #D9CFC7;
+            background: rgba(140, 201, 240, 0.25);
+            transform: translateY(-2px);
         }
         
         .container {
             max-width: 1400px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
         
         .section-title {
-            color: #4A4035;
+            font-family: 'Orbitron', sans-serif;
+            color: #ffffff;
             font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
             margin-bottom: 20px;
+            text-transform: lowercase;
         }
         
         .subjects-grid {
@@ -107,24 +160,27 @@
         }
         
         .subject-card {
-            background: #F9F8F6;
-            border-radius: 12px;
+            background: rgba(140, 201, 240, 0.2);
+            border: 1px solid rgba(140, 201, 240, 0.4);
+            border-radius: 15px;
             padding: 25px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             text-decoration: none;
-            color: #4A4035;
+            color: #ffffff;
+            backdrop-filter: blur(15px);
         }
         
         .subject-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 25px rgba(140, 201, 240, 0.4);
+            background: rgba(140, 201, 240, 0.3);
+            border-color: rgba(140, 201, 240, 0.6);
         }
         
         .subject-icon {
-            font-size: 50px;
             margin-bottom: 10px;
             display: flex;
             justify-content: center;
@@ -132,37 +188,27 @@
             height: 70px;
         }
         
-        /* .subject-icon-svg {
-            width: 50px;
-            height: 50px;
-            stroke: #C9B59C;
-            stroke-width: 2;
-        } */
         .subject-icon img {
             width: 60px;
             height: 60px;
             object-fit: contain;
         }
-        /* .subject-icon img {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-            background: white;
-            padding: 12px;
-            border-radius: 50%;  /* Makes it a circle */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);  /* Subtle depth */
-        } */
         
         .subject-name {
+            font-family: 'Orbitron', sans-serif;
             font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: lowercase;
         }
         
         .conversations-section {
-            background: #F9F8F6;
+            background: rgba(52, 73, 94, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            backdrop-filter: blur(20px);
         }
         
         .conversations-header {
@@ -171,12 +217,20 @@
             align-items: center;
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #D9CFC7;
+            border-bottom: 2px solid rgba(140, 201, 240, 0.3);
         }
         
         .conversations-header h3 {
-            color: #4A4035;
+            font-family: 'Orbitron', sans-serif;
+            color: #ffffff;
             font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: lowercase;
+        }
+        
+        .conversations-header img {
+            filter: brightness(1.2);
         }
         
         .conversation-list {
@@ -185,9 +239,9 @@
         }
         
         .conversation-item {
-            background: white;
-            border: 1px solid #D9CFC7;
-            border-radius: 10px;
+            background: rgba(140, 201, 240, 0.1);
+            border: 1px solid rgba(140, 201, 240, 0.3);
+            border-radius: 12px;
             padding: 20px;
             cursor: pointer;
             transition: all 0.2s;
@@ -197,8 +251,9 @@
         }
         
         .conversation-item:hover {
-            border-color: #C9B59C;
-            box-shadow: 0 3px 10px rgba(201, 181, 156, 0.2);
+            border-color: #8cc9f0;
+            background: rgba(140, 201, 240, 0.2);
+            box-shadow: 0 3px 10px rgba(140, 201, 240, 0.3);
         }
         
         .conversation-info {
@@ -206,71 +261,96 @@
         }
         
         .conversation-title {
-            color: #4A4035;
+            color: #ffffff;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 5px;
         }
         
         .conversation-meta {
-            color: #6B5D52;
+            color: rgba(255, 255, 255, 0.6);
             font-size: 13px;
         }
         
         .conversation-subject {
             display: inline-block;
-            background: #C9B59C;
-            color: #F9F8F6;
+            background: rgba(140, 201, 240, 0.3);
+            color: #8cc9f0;
+            border: 1px solid rgba(140, 201, 240, 0.4);
             padding: 4px 12px;
             border-radius: 12px;
             font-size: 12px;
             margin-left: 10px;
+            font-weight: 700;
         }
         
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #6B5D52;
+            color: rgba(255, 255, 255, 0.6);
         }
         
         .empty-state-icon {
-            font-size: 60px;
             margin-bottom: 15px;
+        }
+        
+        .empty-state-icon img {
+            filter: brightness(1.2);
         }
         
         .empty-state h4 {
             font-size: 20px;
             margin-bottom: 10px;
-            color: #4A4035;
+            color: #8cc9f0;
+            font-weight: 700;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .subjects-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="base-background"></div>
+    <div class="mountain-background"></div>
+    
     <div class="container">
         <div class="header">
             <div class="header-left">
                 {% if user.picture %}
-                <img src="{{ user.picture }}" alt="User" class="user-avatar">
+                <img src="{{ user.picture }}" alt="user" class="user-avatar">
                 {% else %}
-                <div class="user-avatar" style="background: #B7B7A4; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                <div class="user-avatar" style="background: rgba(140, 201, 240, 0.3); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700;">
                     {{ user.name[0] if user.name else '?' }}
                 </div>
                 {% endif %}
                 <div class="user-info">
-                    <h2>Welcome back, {{ user.name or 'Student' }}!</h2>
+                    <h2>welcome back, {{ user.name or 'student' }}!</h2>
                     <p>{{ user.email }}</p>
                 </div>
             </div>
             <div class="header-right">
                 <a href="/" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px;">
-                    <img src="{{ url_for('static', filename='images/home.png') }}" alt="" style="width: 18px; height: 18px;">
-                    Home
+                    <img src="{{ url_for('static', filename='images/home.png') }}" alt="" style="width: 18px; height: 18px; filter: brightness(1.2);">
+                    home
                 </a>
-                <a href="/logout" class="btn btn-secondary">Logout</a>
+                <a href="/logout" class="btn btn-secondary">logout</a>
             </div>
         </div>
         
-        <h2 class="section-title">Start a New Session</h2>
+        <h2 class="section-title">start a new session</h2>
         <div class="subjects-grid">
             {% for key, subject in subjects.items() %}
             <a href="/chat/{{ key }}" class="subject-card">
@@ -286,7 +366,7 @@
             <div class="conversations-header">
                 <h3 style="display: flex; align-items: center; gap: 10px;">
                     <img src="{{ url_for('static', filename='images/convers.png') }}" alt="" style="width: 28px; height: 28px;">
-                    Your Recent Conversations
+                    your recent conversations
                 </h3>
             </div>
             {% if conversations %}
@@ -294,24 +374,24 @@
                 {% for conv in conversations %}
                 <div class="conversation-item" onclick="openConversation('{{ conv.subject }}', {{ conv.id }})">
                     <div class="conversation-info">
-                        <div class="conversation-title">{{ conv.title or 'Untitled Conversation' }}</div>
+                        <div class="conversation-title">{{ conv.title or 'untitled conversation' }}</div>
                         <div class="conversation-meta">
-                            Last updated: {{ conv.updated_at }}
+                            last updated: {{ conv.updated_at }}
                             <span class="conversation-subject">{{ subjects[conv.subject].name }}</span>
                         </div>
                     </div>
-                    <div>→</div>
+                    <div style="color: #8cc9f0; font-size: 20px;">→</div>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
             <div class="empty-state">
                 <div class="empty-state-icon">
-                <img src="{{ url_for('static', filename='images/bubble.png') }}" alt="" style="max-width: 80px;">
+                    <img src="{{ url_for('static', filename='images/bubble.png') }}" alt="" style="max-width: 80px;">
+                </div>
+                <h4>no conversations yet</h4>
+                <p>start learning by selecting a subject above!</p>
             </div>
-    <h4>No conversations yet</h4>
-    <p>Start learning by selecting a subject above!</p>
-</div>
             {% endif %}
         </div>
     </div>
