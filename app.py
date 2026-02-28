@@ -928,3 +928,7 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+@app.route('/auth/google/redirect')
+def google_redirect():
+    """Handle Google OAuth implicit flow redirect"""
+    return render_template('oauth_redirect.html')

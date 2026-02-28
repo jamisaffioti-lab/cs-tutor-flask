@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head><title>Signing in...</title></head>
+<body>
+<script>
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get('access_token');
+
+    if (accessToken) {
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { 'Authorization': 'Bearer ' + accessToken }
+        })
+        .then(r => r.json())
+        .then(user => {
+            return fetch('/auth/google/callback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    google_id: user.sub,
+                    email: user.email,
+                    name: user.name,
+                    picture: user.picture
+                })
+            });
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) window.location.href = '/';
+            else window.location.href = '/?error=auth_failed';
+        })
+        .catch(() => window.location.href = '/?error=auth_failed');
+    } else {
+        window.location.href = '/?error=no_token';
+    }
+</script>
+<p style="font-family: monospace; text-align: center; margin-top: 40vh; color: #fff; background: #1a1a2e; height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center;">signing in...</p>
+</body>
+</html>
