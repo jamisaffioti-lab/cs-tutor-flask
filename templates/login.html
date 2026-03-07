@@ -192,12 +192,6 @@
         <h1>ascent scholars</h1>
         <p class="tagline">your personal AI tutor for computer science</p>
         
-        <!-- Error message display -->
-        <div id="error-message" style="display: none; background: rgba(231, 76, 60, 0.2); border: 1px solid rgba(231, 76, 60, 0.4); border-radius: 12px; padding: 15px; margin: 20px 0; color: #e74c3c;">
-            <strong>Access Restricted</strong><br>
-            <span id="error-text"></span>
-        </div>
-        
         <div class="features">
             <div class="feature">
                 <span class="feature-icon">✓</span>
@@ -221,7 +215,7 @@
         
         <div class="google-btn-wrapper">
             <div id="g_id_onload"
-                 data-client_id="{{ google_client_id }}"
+                 data-client_id="84118527298-ubgti2kp77ii1vkkaa7du1rd5aqt8h2m.apps.googleusercontent.com"
                  data-callback="handleCredentialResponse">
             </div>
             
@@ -244,32 +238,8 @@
     </div>
 
     <script>
-        // Check for error in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        
-        if (error) {
-            const errorDiv = document.getElementById('error-message');
-            const errorText = document.getElementById('error-text');
-            
-            if (error === 'auth_failed') {
-                errorText.textContent = 'This app is currently in private beta. Please contact the administrator for access.';
-            } else if (error === 'no_token') {
-                errorText.textContent = 'Authentication failed. Please try again.';
-            } else {
-                errorText.textContent = 'An error occurred. Please try again.';
-            }
-            
-            errorDiv.style.display = 'block';
-            
-            // Clear error from URL after showing it
-            setTimeout(() => {
-                window.history.replaceState({}, document.title, '/');
-            }, 100);
-        }
-        
         function startGoogleLogin() {
-            const clientId = '{{ google_client_id }}';
+            const clientId = '84118527298-ubgti2kp77ii1vkkaa7du1rd5aqt8h2m.apps.googleusercontent.com';
             const redirectUri = window.location.origin + '/auth/google/redirect';
             const scope = encodeURIComponent('openid email profile');
             const url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + clientId +

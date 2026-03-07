@@ -16,22 +16,10 @@ CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(16))
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# ========================================
-# EMAIL WHITELIST - Only these emails can access the app
-# ========================================
-ALLOWED_EMAILS = {
-    'jami.saffioti@gmail.com',        # Your primary email
-    'nova.noros@gmail.com',          # Test account
-    # Add more authorized emails here as needed
-}
-# ========================================
-
 # Google OAuth Configuration
-GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
-GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
-
-if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-    print("WARNING: Google OAuth credentials not set in environment variables!")
+# You'll need to get these from Google Cloud Console
+GOOGLE_CLIENT_ID = "your-google-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET = "your-google-client-secret"
 
 # Your API key
 api_key = os.environ.get('ANTHROPIC_API_KEY')
@@ -304,13 +292,6 @@ def google_callback():
     if not google_id or not email:
         return jsonify({'success': False, 'error': 'Missing credentials'})
     
-    # ✅ CHECK EMAIL WHITELIST
-    if email not in ALLOWED_EMAILS:
-        return jsonify({
-            'success': False, 
-            'error': 'Access restricted. This app is currently in private beta. Please contact the administrator for access.'
-        })
-    
     # Check if user exists, create if not
     db = get_db()
     user = db.execute('SELECT * FROM users WHERE google_id = ?', (google_id,)).fetchone()
@@ -353,7 +334,7 @@ def index():
             'picture': session.get('picture')
         }
         return render_template('index.html', subjects=SUBJECTS, user=user)
-    return render_template('login.html', google_client_id=GOOGLE_CLIENT_ID)
+    return render_template('login.html')
 
 @app.route('/dashboard')
 @login_required
@@ -705,7 +686,7 @@ def api_chat_file():
 def api_practice():
     print("=== AP PRACTICE CALLED ===")
     print(f"Request data: {request.json}")
-    """Find relevant AP practice questions with real College Board materials"""
+    """Find relevant AP practice questions"""
     data = request.json
     subject = data.get('subject', 'general')
     topic = data.get('topic', '')
@@ -728,62 +709,18 @@ def api_practice():
             if conv:
                 messages = json.loads(conv['messages'])
         
-        # Enhanced AP-specific practice prompt with real College Board resources
-        if subject == 'ap_cs_a':
-            practice_prompt = """I'm studying AP Computer Science A. Please recommend specific practice resources focusing on official College Board materials:
-
-1. **Official Past FRQs:** Direct me to specific Free Response Questions from https://apcentral.collegeboard.org/courses/ap-computer-science-a/exam/past-exam-questions
-   - Based on our conversation, which specific FRQ topics/years should I focus on?
-   - Include question numbers (e.g., "2023 FRQ #1 on Arrays")
-
-2. **Scoring Resources:** Point me to:
-   - Scoring guidelines for those specific questions
-   - Sample student responses (1-9 scores) with commentary
-   - Chief Reader reports explaining common mistakes
-
-3. **Targeted Practice:** Recommend supplementary sites:
-   - CodingBat (codingbat.com/java) - specific sections
-   - CodeHS - relevant units
-   - Practice-It - targeted problem sets
-
-Format with direct links and specific question references."""
-
-        elif subject == 'ap_cs_principles':
-            practice_prompt = """I'm studying AP Computer Science Principles. Please recommend specific practice resources focusing on official College Board materials:
-
-1. **Official Past Questions:** Direct me to resources from https://apcentral.collegeboard.org/courses/ap-computer-science-principles/exam/past-exam-questions
-   - Multiple Choice practice questions relevant to our discussion
-   - Create Performance Task scoring rubrics and examples
-
-2. **Sample Work:** Show me:
-   - Scored Create Performance Task submissions
-   - Sample responses with commentary
-   - Digital portfolio examples
-
-3. **Additional Practice:**
-   - Code.org AP CSP curriculum - specific units
-   - Khan Academy AP CSP - relevant topics
-   - CodeHS practice problems
-
-Based on what we've discussed, which exam components should I practice first?"""
-
-        else:
-            # Non-AP subject
-            practice_prompt = f"I'm studying {SUBJECTS[subject]['name']}. Recommend specific practice problems and resources with direct links to reputable sites."
-        
-        # Add user's practice request to conversation
+        # Add user's practice request
         user_message = "I'd like to practice some problems. Can you recommend specific practice problems and resources?"
         messages.append({
             "role": "user",
             "content": user_message
         })
         
-        # Create practice messages with full conversation context
-        practice_messages = messages.copy()
-        practice_messages.append({
+        # Simple practice prompt
+        practice_messages = [{
             "role": "user",
-            "content": practice_prompt
-        })
+            "content": f"I'm studying {SUBJECTS[subject]['name']}. Can you recommend specific practice problems and resources I can use? Include links to College Board resources if this is an AP course, and other reputable practice sites like CodeHS, CodingBat, etc."
+        }]
         
         # Get response with retry
         response = chat_with_retry(practice_messages)
@@ -797,56 +734,12 @@ Based on what we've discussed, which exam components should I practice first?"""
                 response_text += block.get('text', '')
         
         if not response_text:
-            # Fallback response with direct links
-            if subject == 'ap_cs_a':
-                response_text = """📚 **Official College Board AP CSA Resources:**
-
-**Past Free Response Questions:**
-https://apcentral.collegeboard.org/courses/ap-computer-science-a/exam/past-exam-questions
-
-Start with these recent FRQs:
-• 2023: Arrays, 2D Arrays, Inheritance
-• 2022: Classes, Methods, ArrayLists  
-• 2021: Algorithms, Interfaces
-
-**For Each Question:**
-1. Attempt it first (timed: 25 min per question)
-2. Check scoring guidelines
-3. Review sample student responses
-4. Read Chief Reader report for common errors
-
-**Additional Practice:**
-• CodingBat: https://codingbat.com/java (AP-1, Recursion-1 sections)
-• CodeHS: AP CSA practice problems
-• Practice-It: UW practice problems"""
-            
-            elif subject == 'ap_cs_principles':
-                response_text = """📚 **Official College Board AP CSP Resources:**
-
-**Exam Questions & Scoring:**
-https://apcentral.collegeboard.org/courses/ap-computer-science-principles/exam/past-exam-questions
-
-**Create Performance Task:**
-1. Review scoring rubric (Row 1-6 breakdown)
-2. Study sample submissions with scores
-3. Focus on: algorithm complexity, abstraction, data & procedural abstraction
-
-**Practice Strategy:**
-• Multiple Choice: Practice 2021-2023 released questions
-• Create Task: Review 3 high-scoring and 3 low-scoring examples
-• Understand common mistakes from scoring commentary
-
-**Additional Resources:**
-• Code.org: Full AP CSP curriculum
-• Khan Academy: AP CSP practice
-• Create Task planning templates"""
-            else:
-                response_text = "Check LeetCode, HackerRank, and Exercism for structured practice problems."
+            response_text = "I'd recommend checking College Board's AP Central for official practice questions, CodeHS for interactive exercises, and CodingBat for coding practice."
         
-        # Add assistant response to conversation  
+        # Add assistant response to conversation
         messages.append({
             "role": "assistant",
-            "content": f"📝 **Practice Resources: {SUBJECTS[subject]['name']}**\n\n{response_text}"
+            "content": f"Practice Resources: {SUBJECTS[subject]['name']}\n\n{response_text}"
         })
         
         # Save updated conversation to database
@@ -1041,4 +934,3 @@ if __name__ == '__main__':
 def google_redirect():
     """Handle Google OAuth implicit flow redirect"""
     return render_template('oauth_redirect.html')
-
