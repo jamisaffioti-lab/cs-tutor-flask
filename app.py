@@ -18,7 +18,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Email whitelist for private beta
 ALLOWED_EMAILS = {
-    'jamisaffioti@gmail.com',
+    'jami.saffioti@gmail.com',
     'nova.noros@gmail.com',
 }
 
@@ -950,3 +950,4 @@ if __name__ == '__main__':
 def google_redirect():
     """Handle Google OAuth implicit flow redirect"""
     return render_template('oauth_redirect.html')
+
