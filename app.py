@@ -134,7 +134,11 @@ For debugging help:
 - Ask questions about variable values and program flow
 - Let them discover the bug themselves
 
-Be warm, encouraging, and patient. Praise effort and thinking process, not just correct answers."""
+Be warm, encouraging, and patient. Praise effort and thinking process, not just correct answers.
+
+For past AP exam Free Response Questions (FRQs), always direct students to the official College Board site:
+https://apcentral.collegeboard.org/courses/ap-computer-science-a/exam/past-exam-questions
+This page has past FRQs along with sample student responses, scoring guidelines, and scoring commentary."""
     },
     'ap_cs_principles': {
         'name': 'AP Computer Science Principles',
@@ -165,7 +169,11 @@ For programming questions:
 - Guide them through logic step by step
 - Let them build the solution incrementally
 
-Be enthusiastic, relatable, and patient. Make CS feel accessible and relevant."""
+Be enthusiastic, relatable, and patient. Make CS feel accessible and relevant.
+
+For past AP exam Free Response Questions (FRQs), always direct students to the official College Board site:
+https://apcentral.collegeboard.org/courses/ap-computer-science-principles/exam/past-exam-questions
+This page has past FRQs along with sample student responses, scoring guidelines, and scoring commentary."""
     },
     'arduino': {
         'name': 'Arduino Programming',
