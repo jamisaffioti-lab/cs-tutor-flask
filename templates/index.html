@@ -170,6 +170,10 @@
     </style>
 </head>
 <body>
+    {% if user %}
+    <a href="/logout" style="position: fixed; top: 18px; right: 24px; color: rgba(255,255,255,0.45); font-size: 12px; text-decoration: none; font-family: 'Courier New', monospace; z-index: 100;">logout</a>
+    {% endif %}
+
     
     <!-- Parallax background layers -->
     <div class="bg-layer bg-dark"></div>
@@ -185,8 +189,7 @@
             {% if user %}
             <p class="user-info">
                 welcome, {{ user.name }}
-                <a href="/dashboard" style="display: inline-flex; align-items: center; gap: 8px;"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="" style="width: 20px; height: 20px;">dashboard</a>
-                <a href="/logout">logout</a>
+                <a href="/dashboard" style="display: inline-flex; align-items: center; gap: 8px; margin-left: 10px;"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="" style="width: 20px; height: 20px;">dashboard</a>
             </p>
             {% endif %}
         </div>
