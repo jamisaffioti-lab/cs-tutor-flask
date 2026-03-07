@@ -20,7 +20,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # EMAIL WHITELIST - Only these emails can access the app
 # ========================================
 ALLOWED_EMAILS = {
-    'jamisaffioti@gmail.com',        # Your primary email
+    'jami.saffioti@gmail.com',        # Your primary email
     'nova.noros@gmail.com',          # Test account
     # Add more authorized emails here as needed
 }
@@ -1041,3 +1041,4 @@ if __name__ == '__main__':
 def google_redirect():
     """Handle Google OAuth implicit flow redirect"""
     return render_template('oauth_redirect.html')
+
