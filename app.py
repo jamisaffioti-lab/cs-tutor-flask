@@ -350,7 +350,7 @@ def index():
             'picture': session.get('picture')
         }
         return render_template('index.html', subjects=SUBJECTS, user=user)
-    return render_template('login.html')
+    return render_template('login.html', google_client_id=GOOGLE_CLIENT_ID)
 
 @app.route('/dashboard')
 @login_required
