@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+{% include 'partials/head.html' %}
+<title>The AI Architect · Python lab · Ascent Scholars</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<style>
+  :root {
+    /* The output terminal stays dark, like the website's dark sections */
+    --term-bg: var(--stone);
+    --term-text: var(--mist);
+    --term-ok: var(--lime);
+    --term-err: var(--coral);
+    --term-dim: var(--bark);
+    --side-w: 232px;
+    --lesson-w: 380px;
+  }
+  html, body { height: 100%; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+
+  .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--side-w) var(--lesson-w) 1fr; }
+
+  /* ── Course outline ── */
+  .outline { border-right: var(--rule); overflow-y: auto; padding: 20px 0 32px; background: var(--bg); }
+  .outline-title { padding: 0 20px 14px; border-bottom: var(--rule); margin-bottom: 8px; }
+  .outline-title .display { font-size: 22px; margin-top: 4px; }
+  .week { padding: 12px 0 4px; }
+  .week-label { padding: 0 20px 6px; font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); }
+  .item { display: flex; gap: 10px; align-items: flex-start; width: 100%; text-align: left; background: none; border: none; border-left: 2px solid transparent; padding: 7px 18px; cursor: pointer; font-family: var(--font-body); font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+  .item:hover { background: var(--surface); color: var(--text-primary); }
+  .item.active { background: var(--surface); color: var(--text-primary); border-left-color: var(--accent-fill); }
+  .item-dot { width: 8px; height: 8px; margin-top: 5px; flex-shrink: 0; border: 1.5px solid var(--border-strong); border-radius: 50%; }
+  .item.done .item-dot { background: var(--accent-fill); border-color: var(--accent-fill); }
+  .item-kind { display: block; font-family: var(--font-label); font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+
+  /* ── Lesson panel ── */
+  .lesson { border-right: var(--rule); display: flex; flex-direction: column; min-height: 0; background: var(--surface); }
+  .lesson-scroll { flex: 1; overflow-y: auto; padding: 28px 28px 32px; }
+  .lesson .eyebrow { margin-bottom: 8px; }
+  .lesson h1 { font-size: 32px; margin-bottom: 16px; }
+  .lesson p { color: var(--text-secondary); margin-bottom: 12px; }
+  .lesson em { font-style: italic; color: var(--text-primary); }
+  .lesson code { font-family: var(--font-body); font-size: 11.5px; color: var(--text-primary); background: var(--bg); border: var(--rule); padding: 1px 5px; white-space: nowrap; }
+  .callout { border-left: 3px solid var(--accent-fill); background: var(--pop-wash); padding: 12px 14px; margin: 16px 0; color: var(--text-primary); }
+  .callout.note { border-left-color: var(--ridge-fill); background: var(--bg); }
+  .callout-label { display: block; font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .callout.note .callout-label { color: var(--ridge-text); }
+  .subhead { font-family: var(--font-label); font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-primary); margin: 22px 0 12px; }
+  .steps { list-style: none; counter-reset: s; }
+  .steps li { counter-increment: s; display: flex; gap: 12px; margin-bottom: 12px; color: var(--text-secondary); }
+  .steps li::before { content: counter(s); flex-shrink: 0; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; background: var(--accent-fill); color: var(--on-accent); font-family: var(--font-label); font-size: 10px; font-weight: 700; }
+  .outcomes { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--grid-gap); border: var(--rule); }
+  .outcome { background: var(--surface); padding: 12px 14px; }
+  .outcome .callout-label { margin-bottom: 2px; }
+  .lesson-foot { display: flex; gap: 8px; justify-content: space-between; padding: 14px 20px; border-top: var(--rule); background: var(--surface); }
+  .lesson-foot .btn { flex: 1; }
+
+  /* ── Editor + output ── */
+  .editor-area { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--cream); }
+  .editor-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: var(--rule); background: var(--bg); }
+  .file-tab { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+  .file-tab::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-fill); }
+  .editor-actions { display: flex; gap: 8px; }
+  #editor { flex: 1; min-height: 0; }
+  .resize { height: 6px; cursor: row-resize; background: var(--bg); border-top: var(--rule); border-bottom: var(--rule); }
+  .output { height: 230px; display: flex; flex-direction: column; background: var(--term-bg); color: var(--term-text); }
+  .output-top { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .output-label { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--term-dim); }
+  #outputStatus { margin-left: auto; font-size: 11px; color: var(--term-dim); }
+  #outputStatus.ok { color: var(--term-ok); }
+  #outputStatus.err { color: var(--term-err); }
+  .clear-btn { background: none; border: none; color: var(--term-dim); font-family: var(--font-body); font-size: 11px; cursor: pointer; }
+  .clear-btn:hover { color: var(--term-text); }
+  #outputScroll { flex: 1; overflow-y: auto; padding: 10px 16px 16px; font-size: 12.5px; line-height: 1.65; white-space: pre-wrap; }
+  .out-line { min-height: 1.65em; }
+  .out-info { color: var(--term-dim); }
+  .out-prompt { color: var(--term-dim); }
+  .out-success { color: var(--term-text); }
+  .out-error { color: var(--term-err); }
+  .run-btn .spinner { display: none; width: 10px; height: 10px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .run-btn.running .spinner { display: inline-block; }
+  .run-btn.running .play { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 1100px) { :root { --side-w: 0px; } .outline { display: none; } }
+  @media (max-width: 780px) {
+    body { overflow: auto; }
+    .workspace { display: block; }
+    .lesson { border-right: none; border-bottom: var(--rule); }
+    .editor-area { height: 85vh; }
+  }
+</style>
+</head>
+<body>
+{% set back = ('/dashboard', 'Dashboard') %}
+{% include 'partials/bar.html' %}
+
+<div class="workspace">
+  <nav class="outline" aria-label="Course outline">
+    <div class="outline-title">
+      <div class="eyebrow">Python lab</div>
+      <div class="display">The AI Architect</div>
+    </div>
+    <div id="outline"></div>
+  </nav>
+
+  <section class="lesson">
+    <div class="lesson-scroll" id="lessonContent"></div>
+    <div class="lesson-foot">
+      <button class="btn btn-ghost" id="prevBtn" onclick="go(current - 1)">&larr; Back</button>
+      <button class="btn" id="nextBtn" onclick="go(current + 1)">Next &rarr;</button>
+    </div>
+  </section>
+
+  <section class="editor-area">
+    <div class="editor-top">
+      <div class="file-tab" id="fileTab">main.py</div>
+      <div class="editor-actions">
+        <button class="btn btn-ghost btn-sm" id="resetBtn" onclick="resetCode()">Reset</button>
+        <button class="btn btn-ghost btn-sm" id="solutionBtn" onclick="showSolution()">Show solution</button>
+        <button class="btn btn-sm run-btn" id="runBtn" onclick="runCode()"><span class="play">&#9654;</span><span class="spinner"></span> Run</button>
+      </div>
+    </div>
+    <div id="editor"></div>
+    <div class="resize" id="resizeHandle"></div>
+    <div class="output" id="outputPanel">
+      <div class="output-top">
+        <span class="output-label">Output</span>
+        <span id="outputStatus">ready</span>
+        <button class="clear-btn" onclick="clearOutput()">clear</button>
+      </div>
+      <div id="outputScroll"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const LAB = {{ lab | tojson }};
+const ITEMS = LAB.items;
+let current = 0;
+let editor = null;
+
+// ── Saved work (per browser) ──
+function store(key, value) {
+  try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); } catch (e) { return null; }
+}
+const codeKey = (item) => 'ascent-lab:code:' + item.id;
+function doneSet() { try { return new Set(JSON.parse(store('ascent-lab:done') || '[]')); } catch (e) { return new Set(); } }
+function markDone(item) { const d = doneSet(); d.add(item.id); store('ascent-lab:done', JSON.stringify([...d])); renderOutline(); }
+
+// ── Outline ──
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function renderOutline() {
+  const done = doneSet();
+  let html = '';
+  Object.entries(LAB.weeks).forEach(([week, title]) => {
+    html += `<div class="week"><div class="week-label">Week ${week} · ${escapeHtml(title)}</div>`;
+    ITEMS.forEach((item, i) => {
+      if (String(item.week) !== week) return;
+      const cls = ['item', i === current ? 'active' : '', done.has(item.id) ? 'done' : ''].join(' ');
+      html += `<button class="${cls}" onclick="go(${i})"><span class="item-dot"></span><span><span class="item-kind">${escapeHtml(item.label)}</span>${escapeHtml(item.title)}</span></button>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('outline').innerHTML = html;
+}
+
+// ── Lesson panel (lesson text is trusted course content, so it may hold HTML) ──
+function renderLesson() {
+  const it = ITEMS[current];
+  let h = `<div class="eyebrow">${it.eyebrow}</div><h1 class="display">${it.title}</h1>${it.body}`;
+  if (it.callout) h += `<div class="callout"><span class="callout-label">${it.callout.label}</span>${it.callout.text}</div>`;
+  if (it.subhead) h += `<div class="subhead">${it.subhead}</div>`;
+  if (it.outcomes) h += '<div class="outcomes">' + it.outcomes.map(o => `<div class="outcome"><span class="callout-label">${o.label}</span>${o.text}</div>`).join('') + '</div>';
+  if (it.steps) h += '<ol class="steps">' + it.steps.map(s => `<li><span>${s}</span></li>`).join('') + '</ol>';
+  if (it.challenge) h += `<div class="callout note"><span class="callout-label">${it.challenge.label}</span>${it.challenge.text}</div>`;
+  const panel = document.getElementById('lessonContent');
+  panel.innerHTML = h;
+  panel.scrollTop = 0;
+  document.getElementById('prevBtn').disabled = current === 0;
+  const next = ITEMS[current + 1];
+  document.getElementById('nextBtn').innerHTML = next ? 'Next &rarr;' : 'Finished';
+  document.getElementById('nextBtn').disabled = !next;
+  document.getElementById('fileTab').textContent = it.file || 'main.py';
+  const sol = document.getElementById('solutionBtn');
+  sol.style.display = it.solution ? '' : 'none';
+  sol.textContent = 'Show solution';
+  sol.dataset.armed = '';
+  document.title = `${it.title} · The AI Architect · Ascent Scholars`;
+}
+
+function go(i) {
+  if (i < 0 || i >= ITEMS.length) return;
+  if (editor) store(codeKey(ITEMS[current]), editor.getValue());
+  current = i;
+  history.replaceState(null, '', '#' + ITEMS[i].id);
+  renderOutline();
+  renderLesson();
+  if (editor) editor.setValue(store(codeKey(ITEMS[i])) || ITEMS[i].starter || '');
+  clearOutput(`# ${ITEMS[i].eyebrow} · click Run to execute your code`);
+}
+
+function resetCode() {
+  const btn = document.getElementById('resetBtn');
+  if (btn.dataset.armed) {
+    editor.setValue(ITEMS[current].starter || '');
+    btn.dataset.armed = ''; btn.textContent = 'Reset';
+  } else {
+    btn.dataset.armed = '1'; btn.textContent = 'Erase my code?';
+    setTimeout(() => { btn.dataset.armed = ''; btn.textContent = 'Reset'; }, 3000);
+  }
+}
+
+function showSolution() {
+  const btn = document.getElementById('solutionBtn');
+  if (btn.dataset.armed) {
+    store(codeKey(ITEMS[current]), editor.getValue());
+    editor.setValue(ITEMS[current].solution);
+    btn.dataset.armed = ''; btn.textContent = 'Show solution';
+  } else {
+    btn.dataset.armed = '1'; btn.textContent = 'Tried it yourself?';
+    setTimeout(() => { btn.dataset.armed = ''; btn.textContent = 'Show solution'; }, 3000);
+  }
+}
+
+// ── Editor ──
+require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
+require(['vs/editor/editor.main'], function () {
+  const css = getComputedStyle(document.documentElement);
+  const hex = (name, fallback) => (css.getPropertyValue(name).trim() || fallback).replace('#', '');
+  monaco.editor.defineTheme('noros', {
+    base: 'vs', inherit: true,
+    rules: [
+      { token: 'comment', foreground: hex('--taupe', '#6B6559'), fontStyle: 'italic' },
+      { token: 'keyword', foreground: hex('--peri-ink', '#4750D0'), fontStyle: 'bold' },
+      { token: 'string', foreground: hex('--moss', '#2F6B4F') },
+      { token: 'number', foreground: hex('--rust', '#A8441F') },
+      { token: 'identifier', foreground: hex('--stone', '#1a1814') },
+    ],
+    colors: {
+      'editor.background': '#' + hex('--cream', '#faf8f4'),
+      'editor.foreground': '#' + hex('--stone', '#1a1814'),
+      'editorLineNumber.foreground': '#' + hex('--mist', '#b8b2a8'),
+      'editorLineNumber.activeForeground': '#' + hex('--umber', '#4A453D'),
+      'editor.lineHighlightBackground': '#' + hex('--oat-light', '#F6F2EA'),
+      'editorCursor.foreground': '#' + hex('--stone', '#1a1814'),
+      'editor.selectionBackground': '#' + hex('--chartreuse', '#AEBE1E') + '55',
+      'editorIndentGuide.background': '#' + hex('--oat', '#ECE7DD'),
+    }
+  });
+  editor = monaco.editor.create(document.getElementById('editor'), {
+    value: store(codeKey(ITEMS[current])) || ITEMS[current].starter || '',
+    language: 'python', theme: 'noros',
+    fontSize: 13.5, fontFamily: "'DM Mono', monospace", lineHeight: 22,
+    padding: { top: 16, bottom: 16 }, minimap: { enabled: false },
+    scrollBeyondLastLine: false, tabSize: 4, wordWrap: 'on', automaticLayout: true,
+  });
+  editor.onDidChangeModelContent(() => store(codeKey(ITEMS[current]), editor.getValue()));
+  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, runCode);
+});
+
+// ── Running Python ──
+// Code runs with Pyodide (real Python compiled to WebAssembly) inside a Web
+// Worker in the student's own browser: no server, no API key, and nothing a
+// student writes can touch the server. A stuck loop is stopped after 10s.
+const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
+const RUN_TIMEOUT_MS = 10000;
+let pyWorker = null;
+let pyReady = null;
+
+function workerSource() {
+  return `
+    importScripts('${PYODIDE_URL}pyodide.js');
+    let pyodide = null;
+    const ready = (async () => {
+      pyodide = await loadPyodide({ indexURL: '${PYODIDE_URL}' });
+      postMessage({ type: 'ready' });
+    })();
+    onmessage = async (e) => {
+      await ready;
+      pyodide.setStdout({ batched: (t) => postMessage({ type: 'out', text: t }) });
+      pyodide.setStderr({ batched: (t) => postMessage({ type: 'err', text: t }) });
+      try {
+        await pyodide.loadPackagesFromImports(e.data.code);
+        await pyodide.runPythonAsync(e.data.code);
+        postMessage({ type: 'done', ok: true });
+      } catch (err) {
+        const lines = String(err.message || err).trim().split('\\n');
+        const i = lines.findIndex(l => l.includes('File "<exec>"'));
+        postMessage({ type: 'err', text: (i >= 0 ? lines.slice(i) : lines.slice(-4)).join('\\n') });
+        postMessage({ type: 'done', ok: false });
+      }
+    };`;
+}
+
+function startWorker() {
+  const blob = new Blob([workerSource()], { type: 'application/javascript' });
+  pyWorker = new Worker(URL.createObjectURL(blob));
+  pyReady = new Promise((resolve, reject) => {
+    pyWorker.addEventListener('message', function onReady(e) {
+      if (e.data.type === 'ready') { pyWorker.removeEventListener('message', onReady); resolve(); }
+    });
+    pyWorker.addEventListener('error', reject);
+  });
+}
+startWorker();  // start loading Python as soon as the page opens
+
+let running = false;
+async function runCode() {
+  if (running || !editor) return;
+  running = true;
+  const btn = document.getElementById('runBtn');
+  const status = document.getElementById('outputStatus');
+  const item = ITEMS[current];
+  btn.classList.add('running'); btn.disabled = true;
+  status.className = '';
+  appendOutput('', 'prompt');
+  appendOutput(`$ python ${item.file || 'main.py'}`, 'prompt');
+
+  status.textContent = 'loading python...';
+  let ok = true;
+  try { await pyReady; } catch (e) {
+    appendOutput('Could not load Python in this browser. Check your connection and reload.', 'error');
+    ok = false;
+  }
+  if (ok) {
+    status.textContent = 'running...';
+    const code = editor.getValue();
+    await new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        pyWorker.terminate();
+        appendOutput('Stopped after 10 seconds. Is there a loop that never ends?', 'error');
+        ok = false;
+        startWorker();
+        resolve();
+      }, RUN_TIMEOUT_MS);
+      const onMsg = (e) => {
+        const m = e.data;
+        if (m.type === 'out') m.text.split('\n').forEach(l => appendOutput(l, 'success'));
+        if (m.type === 'err') { ok = false; m.text.split('\n').forEach(l => appendOutput(l, 'error')); }
+        if (m.type === 'done') { clearTimeout(timer); pyWorker.removeEventListener('message', onMsg); resolve(); }
+      };
+      pyWorker.addEventListener('message', onMsg);
+      pyWorker.postMessage({ code });
+    });
+  }
+  status.textContent = ok ? 'done ✓' : 'error';
+  status.className = ok ? 'ok' : 'err';
+  if (ok) markDone(item);
+  btn.classList.remove('running'); btn.disabled = false;
+  running = false;
+}
+
+function appendOutput(text, type) {
+  const scroll = document.getElementById('outputScroll');
+  const div = document.createElement('div');
+  div.className = 'out-line out-' + (type || 'success');
+  div.textContent = text;
+  scroll.appendChild(div);
+  scroll.scrollTop = scroll.scrollHeight;
+}
+
+function clearOutput(message) {
+  document.getElementById('outputScroll').innerHTML = '';
+  appendOutput(message || '# Output cleared', 'info');
+  const status = document.getElementById('outputStatus');
+  status.textContent = 'ready'; status.className = '';
+}
+
+// ── Resize the output panel ──
+document.getElementById('resizeHandle').addEventListener('mousedown', () => {
+  const onMove = (e) => {
+    const area = document.querySelector('.editor-area').getBoundingClientRect();
+    const h = area.bottom - e.clientY;
+    if (h > 80 && h < area.height - 120) document.getElementById('outputPanel').style.height = h + 'px';
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', () => document.removeEventListener('mousemove', onMove), { once: true });
+});
+
+// Start on the lesson in the URL (#w2-l4), else the first one
+window.addEventListener('hashchange', () => {
+  const i = ITEMS.findIndex(it => '#' + it.id === location.hash);
+  if (i >= 0 && i !== current) go(i);
+});
+const start = ITEMS.findIndex(it => '#' + it.id === location.hash);
+current = start >= 0 ? start : 0;
+renderOutline();
+renderLesson();
+clearOutput(`# ${ITEMS[current].eyebrow} · click Run to execute your code`);
+</script>
+</body>
+</html>

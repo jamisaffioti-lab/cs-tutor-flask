@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_cors import CORS
 import anthropic
 import secrets
@@ -395,14 +395,9 @@ def google_callback():
 
 @app.route('/')
 def index():
-    """Render the login page or subject selection based on login status"""
+    """Signed in: go straight to the dashboard. Otherwise: the sign-in page."""
     if 'user_id' in session:
-        user = {
-            'name': session.get('name'),
-            'email': session.get('email'),
-            'picture': session.get('picture')
-        }
-        return render_template('index.html', subjects=SUBJECTS, user=user)
+        return redirect('/dashboard')
     return render_template('login.html', google_client_id=GOOGLE_CLIENT_ID)
 
 @app.route('/dashboard')
@@ -999,7 +994,8 @@ def api_clear():
 @app.route('/lab')
 @login_required
 def lab():
-    return send_from_directory(os.path.join(app.root_path, 'labs'), 'ai-architect-week1.html')
+    from labs.ai_architect import curriculum_for_page
+    return render_template('lab.html', lab=curriculum_for_page())
 
 
 # ── Check the AI: slop-detector tasks (AP CSP, competency C2) ──
@@ -1013,7 +1009,7 @@ SLOP_DEFECT_TYPES = ['functional_bug', 'edge_case', 'hallucination', 'intent_gap
 @app.route('/check')
 @login_required
 def check():
-    return send_from_directory(os.path.join(app.root_path, 'slop_detector', 'web'), 'index.html')
+    return render_template('check.html')
 
 
 @app.route('/check/api/task/<task_id>')

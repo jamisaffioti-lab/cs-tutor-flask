@@ -1,621 +1,125 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" data-theme="light">
 <head>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ subject_info.name }} - Tutor</title>
-    <!-- Add Highlight.js for code syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <style>
+{% include 'partials/head.html' %}
+<title>{{ subject_info.name }} tutor · Ascent Scholars</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+  body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  .chat-wrap { flex: 1; min-height: 0; width: 100%; max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; padding: 0 32px; }
 
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+  .chat-head { display: flex; align-items: center; gap: 16px; padding: 24px 0 20px; border-bottom: var(--rule); }
+  .chat-head .eyebrow { margin-bottom: 4px; }
+  .chat-head h1 { font-size: clamp(24px, 3.2vw, 32px); }
 
-    body {
-        font-family: 'Courier New', monospace;
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-        color: #ffffff;
-        position: relative;
-    }
+  .chat-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 0; display: flex; flex-direction: column; gap: 18px; }
+  .message { display: flex; }
+  .message.user { justify-content: flex-end; }
+  .message-content { max-width: 78%; padding: 14px 18px; border-radius: var(--radius); line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .message.assistant .message-content { background: var(--surface); border: var(--rule); border-left: 3px solid var(--accent-fill); }
+  .message.user .message-content { background: var(--stone); color: var(--cream); }
+  .message-content code { font-family: var(--font-body); font-size: 12px; background: var(--bg); border: var(--rule); padding: 1px 5px; border-radius: var(--radius); }
+  .message.user .message-content code { background: transparent; color: inherit; }
+  .message-content pre { white-space: pre; margin: 10px 0; border: var(--rule); border-radius: var(--radius); overflow-x: auto; }
+  .message-content pre code.hljs { display: block; padding: 14px 16px; border: none; font-size: 12px; line-height: 1.6; background: var(--cream); }
+  .message-content.special { max-width: 88%; border-left-color: var(--ridge-fill); }
+  .special-label { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+  .attach-wrap { white-space: normal; margin-bottom: 10px; }
+  .attach-img { max-width: 100%; border-radius: var(--radius); margin-bottom: 8px; display: block; }
+  .attach-chip { display: inline-block; font-size: 11px; border: 1px solid currentColor; padding: 3px 9px; margin-bottom: 8px; opacity: 0.85; }
+  .attach-code { background: var(--stone); color: var(--snow); padding: 12px; margin-bottom: 8px; max-height: 200px; overflow-y: auto; font-size: 12px; }
+  .attach-code-name { color: var(--mist); margin-bottom: 6px; }
+  .attach-code pre { margin: 0; white-space: pre-wrap; }
 
-    /* Mountain background */
-    .mountain-background {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: url('{{ url_for("static", filename="images/norosBbg.png") }}');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        z-index: -1;
-    }
+  .chat-input-container { border-top: var(--rule); padding: 16px 0 22px; }
+  .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .example-btn { font-family: var(--font-body); font-size: 12px; color: var(--text-secondary); background: transparent; border: 1px solid var(--border-soft); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  .example-btn:hover { border-color: var(--accent-fill); color: var(--text-primary); background: var(--pop-wash); }
+  .chat-input-wrapper { display: flex; gap: 8px; align-items: stretch; }
+  .file-upload-label { width: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-strong); border-radius: var(--radius); cursor: pointer; background: var(--surface); color: var(--text-secondary); }
+  .file-upload-label:hover { border-color: var(--text-primary); color: var(--text-primary); }
+  .file-upload-label svg { width: 18px; height: 18px; }
+  #userInput { flex: 1; }
+  .file-info:empty { display: none; }
+  .file-info { margin-top: 10px; }
+  .file-preview { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-secondary); border: var(--rule); background: var(--surface); padding: 6px 10px; }
+  .file-preview img { max-width: 80px; max-height: 56px; }
+  .remove-file { cursor: pointer; font-size: 16px; line-height: 1; color: var(--text-muted); }
+  .remove-file:hover { color: var(--negative); }
+  .action-buttons-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .loading { display: none; margin-top: 10px; font-family: var(--font-display); font-style: italic; font-size: 16px; color: var(--text-secondary); }
+  .loading.show { display: block; }
 
-    .mountain-background::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.3);
-    }
-
-    .base-background {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #000000;
-        z-index: -2;
-    }
-
-    .chat-container {
-        width: 100%;
-        max-width: 900px;
-        height: 90vh;
-        background: rgba(0, 0, 0, 0.72);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        backdrop-filter: blur(30px);
-        position: relative;
-        z-index: 1;
-    }
-
-    .chat-header {
-        background: rgba(0, 0, 0, 0.65);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        color: #ffffff;
-        padding: 20px 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .header-content {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .subject-icon-large {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .subject-icon-large img {
-        width: 50px;
-        height: 50px;
-        object-fit: contain;
-        filter: brightness(1.2);
-    }
-
-    .header-text h1 {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 22px;
-        margin-bottom: 3px;
-        font-weight: 700;
-        letter-spacing: 1px;
-        text-transform: lowercase;
-    }
-
-    .header-text p {
-        font-size: 13px;
-        color: rgba(255, 255, 255, 0.6);
-    }
-
-    .header-right {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .back-button {
-        background: rgba(140, 201, 240, 0.2);
-        color: #8cc9f0;
-        border: 1px solid rgba(140, 201, 240, 0.3);
-        padding: 10px 20px;
-        border-radius: 25px;
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 700;
-        transition: all 0.2s;
-    }
-
-    .back-button:hover {
-        background: rgba(140, 201, 240, 0.3);
-        transform: translateY(-2px);
-    }
-
-    .action-button {
-        background: rgba(140, 201, 240, 0.1);
-        color: #8cc9f0;
-        border: 1px solid rgba(140, 201, 240, 0.2);
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-weight: 700;
-    }
-
-    .action-button:hover {
-        background: rgba(140, 201, 240, 0.2);
-        transform: translateY(-1px);
-    }
-
-    .chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 25px;
-        background: rgba(0, 0, 0, 0.30);
-    }
-
-    .message {
-        margin-bottom: 20px;
-        display: flex;
-        animation: fadeIn 0.3s;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .message.user {
-        justify-content: flex-end;
-    }
-
-    .message-content {
-        max-width: 70%;
-        padding: 14px 18px;
-        border-radius: 18px;
-        word-wrap: break-word;
-        line-height: 1.6;
-        white-space: pre-wrap;
-    }
-
-    .user .message-content {
-        background: rgba(140, 201, 240, 0.3);
-        color: #ffffff;
-        border: 1px solid rgba(140, 201, 240, 0.4);
-    }
-
-    .assistant .message-content {
-        background: rgba(0, 0, 0, 0.55);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
-    .message-content code {
-        background: rgba(0, 0, 0, 0.3);
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-family: 'Courier New', monospace;
-        font-size: 13px;
-        color: #8cc9f0;
-    }
-
-    .message-content pre {
-        background: rgba(0, 0, 0, 0.5);
-        padding: 12px;
-        border-radius: 8px;
-        overflow-x: auto;
-        margin: 10px 0;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
-    .message-content pre code {
-        background: none;
-        padding: 0;
-        color: #8cc9f0;
-        font-size: 13px;
-    }
-
-    .loading-indicator {
-        display: flex;
-        gap: 5px;
-        padding: 15px 20px;
-        background: rgba(0, 0, 0, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 18px;
-        max-width: 70px;
-    }
-
-    .dot {
-        width: 8px;
-        height: 8px;
-        background: #8cc9f0;
-        border-radius: 50%;
-        animation: bounce 1.4s infinite ease-in-out;
-    }
-
-    .dot:nth-child(1) { animation-delay: -0.32s; }
-    .dot:nth-child(2) { animation-delay: -0.16s; }
-
-    @keyframes bounce {
-        0%, 80%, 100% { transform: scale(0); }
-        40% { transform: scale(1); }
-    }
-
-    .examples {
-        display: flex;
-        gap: 10px;
-        margin: 20px 0;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    .example-btn {
-        background: rgba(140, 201, 240, 0.15);
-        color: rgba(255, 255, 255, 0.9);
-        border: 1px solid rgba(140, 201, 240, 0.3);
-        padding: 10px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all 0.2s;
-        white-space: nowrap;
-        font-weight: 700;
-    }
-
-    .example-btn:hover {
-        background: rgba(140, 201, 240, 0.25);
-        border-color: #8cc9f0;
-        transform: translateY(-2px);
-    }
-
-    .welcome-message {
-        text-align: center;
-        color: rgba(255, 255, 255, 0.7);
-        padding: 40px 20px;
-    }
-
-    .welcome-message h2 {
-        font-family: 'Orbitron', sans-serif;
-        color: #8cc9f0;
-        margin-bottom: 15px;
-        font-weight: 700;
-        letter-spacing: 1px;
-    }
-
-    .chat-input-container {
-        background: rgba(0, 0, 0, 0.65);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 20px;
-    }
-
-    .chat-input-wrapper {
-        display: flex;
-        gap: 10px;
-        align-items: flex-end;
-    }
-
-    #userInput {
-        flex: 1;
-        padding: 14px 18px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        font-size: 15px;
-        background: rgba(0, 0, 0, 0.45);
-        color: #ffffff;
-        font-family: 'Courier New', monospace;
-        resize: none;
-        min-height: 50px;
-        max-height: 120px;
-    }
-
-    #userInput::placeholder {
-        color: rgba(255, 255, 255, 0.4);
-    }
-
-    #userInput:focus {
-        outline: none;
-        border-color: #8cc9f0;
-        background: rgba(0, 0, 0, 0.55);
-    }
-
-    .send-button {
-        background: rgba(140, 201, 240, 0.25);
-        border: 1px solid rgba(140, 201, 240, 0.4);
-        color: #ffffff;
-        padding: 14px 24px;
-        border-radius: 25px;
-        font-size: 15px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-        white-space: nowrap;
-        font-family: 'Courier New', monospace;
-    }
-
-    .send-button:hover {
-        background: rgba(140, 201, 240, 0.35);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(140, 201, 240, 0.3);
-    }
-
-    .send-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    /* Action buttons row */
-    .action-buttons-row {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 12px;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    .action-btn {
-        background: rgba(140, 201, 240, 0.15);
-        color: #8cc9f0;
-        border: 1px solid rgba(140, 201, 240, 0.3);
-        padding: 10px 18px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-family: 'Courier New', monospace;
-        white-space: nowrap;
-    }
-
-    .action-btn:hover {
-        background: rgba(140, 201, 240, 0.25);
-        border-color: #8cc9f0;
-        transform: translateY(-1px);
-    }
-
-    .practice-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .practice-btn img {
-        width: 18px;
-        height: 18px;
-        filter: brightness(1.3);
-    }
-
-    .file-upload-wrapper {
-        position: relative;
-    }
-
-    .file-upload-label {
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        padding: 12px;
-        border-radius: 8px;
-        transition: background 0.2s;
-    }
-
-    .file-upload-label:hover {
-        background: rgba(140, 201, 240, 0.1);
-    }
-
-    .file-upload-label img {
-        width: 20px;
-        height: 20px;
-        filter: brightness(1.2);
-    }
-
-    .file-info {
-        margin-top: 8px;
-        font-size: 13px;
-        color: rgba(255, 255, 255, 0.7);
-        min-height: 20px;
-    }
-
-    .file-preview {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(0, 0, 0, 0.40);
-        padding: 8px 12px;
-        border-radius: 8px;
-        border: 1px solid rgba(140, 201, 240, 0.2);
-    }
-
-    .remove-file {
-        cursor: pointer;
-        color: #E67E22;
-        font-weight: bold;
-        margin-left: 10px;
-        transition: color 0.2s;
-    }
-
-    .remove-file:hover {
-        color: #ff8c42;
-    }
-
-    .loading {
-        display: none;
-        text-align: center;
-        color: rgba(255, 255, 255, 0.6);
-        font-style: italic;
-        padding: 10px;
-    }
-
-    /* Mobile responsive */
-    @media (max-width: 768px) {
-        body {
-            padding: 10px;
-        }
-        
-        .chat-container {
-            height: 95vh;
-            border-radius: 15px;
-        }
-        
-        .chat-header {
-            padding: 15px 20px;
-            flex-wrap: wrap;
-        }
-        
-        .header-right {
-            width: 100%;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-        
-        .message-content {
-            max-width: 85%;
-        }
-        
-        .chat-input-wrapper {
-            flex-direction: column;
-        }
-        
-        #userInput,
-        .send-button {
-            width: 100%;
-        }
-        
-        .action-buttons-row {
-            justify-content: flex-start;
-        }
-        
-        .action-btn {
-            flex: 1 1 auto;
-            min-width: 100px;
-            justify-content: center;
-        }
-        
-        .examples {
-            flex-direction: column;
-        }
-        
-        .example-btn {
-            width: 100%;
-            text-align: left;
-        }
-    }
-
-    /* Scrollbar styling */
-    .chat-messages::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .chat-messages::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 10px;
-    }
-
-.chat-messages::-webkit-scrollbar-thumb {
-    background: rgba(140, 201, 240, 0.3);
-    border-radius: 10px;
-}
-
-.chat-messages::-webkit-scrollbar-thumb:hover {
-    background: rgba(140, 201, 240, 0.5);
-}
-    </style>
+  @media (max-width: 620px) {
+    .chat-wrap { padding: 0 16px; }
+    .message-content { max-width: 92%; }
+    .examples { display: none; }
+  }
+</style>
 </head>
-
 <body>
-    <div class="base-background"></div>
-<div class="mountain-background"></div>
-    <div class="chat-container">
-        <div class="chat-header">
-            <div class="header-content">
-                <span class="subject-icon-large">
-                    <img src="{{ url_for('static', filename='images/' + subject_info.icon) }}"
-                        alt="{{ subject_info.name }}">
-                </span>
-                <div class="header-text">
-                    <h1>{{ subject_info.name }}</h1>
-                    <p>Your personal tutor is here to help</p>
-                </div>
-            </div>
-            <a href="/" class="back-button">← Back to Courses</a>
-        </div>
+{% set back = ('/dashboard', 'Dashboard') %}
+{% include 'partials/bar.html' %}
 
-        <div class="chat-messages" id="chatMessages">
-            {% if not initial_messages %}
-            <div class="message assistant">
-                <div class="message-content">Hi! I'm your {{ subject_info.name }} tutor. I'm here to help you learn and understand the concepts. Ask me anything, and I'll guide you through it step by step!</div>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="chat-input-container">
-            <div class="examples">
-                {% for example in subject_info.examples %}
-                <button class="example-btn" onclick="sendExample(this.textContent)">{{ example }}</button>
-                {% endfor %}
-            </div>
-
-            <!-- Input Field and Send Button Row -->
-            <div class="chat-input-wrapper">
-                <div class="file-upload-wrapper">
-                    <input type="file" id="fileInput"
-                        accept=".jpg,.jpeg,.png,.gif,.pdf,.txt,.py,.java,.cpp,.c,.js,.html,.css"
-                        onchange="handleFileSelect(event)" style="display: none;">
-                    <label for="fileInput" class="file-upload-label">
-                        <img src="{{ url_for('static', filename='images/paperclip.png') }}" alt=""
-                            style="width: 20px; height: 20px; filter: brightness(1.2);">
-                    </label>
-                </div>
-                <input type="text" id="userInput" placeholder="Ask your question here..."
-                    onkeypress="handleKeyPress(event)">
-                <button class="send-button" onclick="sendMessage()" id="sendBtn">Send</button>
-            </div>
-
-            <!-- File Info Display -->
-            <div class="file-info" id="fileInfo"></div>
-
-            <!-- Action Buttons Row -->
-            <div class="action-buttons-row">
-                {% if subject == 'ap_cs_a' or subject == 'ap_cs_principles' %}
-                <button class="action-btn practice-btn" onclick="findPracticeQuestions()">
-                    <img src="{{ url_for('static', filename='images/bullseye.png') }}" alt="">
-                    AP Practice
-                </button>
-                {% endif %}
-                <button class="action-btn" onclick="getSummary()">Summary</button>
-                <button class="action-btn" onclick="exportChat()">Export</button>
-                <button class="action-btn" onclick="clearChat()">Clear</button>
-            </div>
-
-            <div class="loading" id="loading">Tutor is thinking...</div>
-        </div>
+<div class="chat-wrap">
+  <div class="chat-head">
+    <div class="icon-tile"><img src="{{ url_for('static', filename='images/' + subject_info.icon) }}" alt=""></div>
+    <div>
+      <div class="eyebrow">Tutor</div>
+      <h1 class="display">{{ subject_info.name }}</h1>
     </div>
+  </div>
+
+  <div class="chat-messages" id="chatMessages" aria-live="polite">
+    {% if not initial_messages %}
+    <div class="message assistant">
+      <div class="message-content">Hi! I'm your {{ subject_info.name }} tutor. Ask me anything, and I'll help you work it out step by step.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="chat-input-container">
+    <div class="examples">
+      {% for example in subject_info.examples %}
+      <button class="example-btn" onclick="sendExample(this.textContent)">{{ example }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="chat-input-wrapper">
+      <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.pdf,.txt,.py,.java,.cpp,.c,.js,.html,.css" onchange="handleFileSelect(event)" hidden>
+      <label for="fileInput" class="file-upload-label" title="Attach a file">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </label>
+      <input type="text" id="userInput" class="input" placeholder="Ask your question here..." onkeypress="handleKeyPress(event)">
+      <button class="btn send-button" onclick="sendMessage()" id="sendBtn">Send</button>
+    </div>
+
+    <div class="file-info" id="fileInfo"></div>
+
+    <div class="action-buttons-row">
+      {% if subject == 'ap_cs_a' or subject == 'ap_cs_principles' %}
+      <button class="btn btn-ghost btn-sm action-btn practice-btn" onclick="findPracticeQuestions()">AP practice</button>
+      {% endif %}
+      <button class="btn btn-ghost btn-sm action-btn" onclick="getSummary()">Summary</button>
+      <button class="btn btn-ghost btn-sm action-btn" onclick="exportChat()">Export</button>
+      <button class="btn btn-ghost btn-sm action-btn" onclick="clearChat()">Clear</button>
+    </div>
+
+    <div class="loading" id="loading">Your tutor is thinking&hellip;</div>
+  </div>
+</div>
 
     <script>
         const subject = "{{ subject }}";
-        window.currentConversationId = {% if conversation_id %}{ { conversation_id } } {% else %} null{% endif %};
+        window.currentConversationId = {{ conversation_id | tojson if conversation_id else 'null' }};
         let selectedFile = null;
 
         // Load initial messages if this is an existing conversation
         const initialMessages = {{ initial_messages| tojson | safe }};
-        console.log('Loading initial messages:', initialMessages);
 
         if (initialMessages && initialMessages.length > 0) {
             initialMessages.forEach((msg, idx) => {
-                console.log(`Message ${idx}:`, msg);
                 let textContent = '';
                 let attachment = null;
 
@@ -623,20 +127,17 @@
                 if (Array.isArray(msg.content)) {
                     // Extract text and check for attachments
                     msg.content.forEach(block => {
-                        console.log('  Block:', block);
                         if (block.type === 'text') {
                             textContent += block.text;
                         } else if (block.type === 'attachment') {
                             // We stored attachment metadata for display
                             const att = block.attachment;
-                            console.log('  Found attachment:', att);
                             if (att.type === 'image' && att.data && !att.too_large) {
                                 attachment = {
                                     type: 'image',
                                     name: att.name,
                                     data: att.data
                                 };
-                                console.log('  Displaying image:', att.name);
                             } else if (att.type === 'image' && att.too_large) {
                                 textContent += `[Image: ${att.name} (${(att.size / 1024).toFixed(1)} KB - too large to display)]\n`;
                             } else if (att.type === 'document') {
@@ -647,7 +148,6 @@
                             }
                         } else if (block.type === 'image') {
                             // Old format or API format - just note it
-                            console.log('  Old format image block');
                             textContent += '[Image was attached]\n';
                         } else if (block.type === 'document') {
                             textContent += '[PDF document was attached]\n';
@@ -655,17 +155,14 @@
                     });
                 } else if (typeof msg.content === 'object' && msg.content !== null) {
                     // Single object - could be attachment or other
-                    console.log('  Single object content:', msg.content);
                     if (msg.content.type === 'attachment') {
                         const att = msg.content.attachment;
-                        console.log('  Single attachment object:', att);
                         if (att.type === 'image' && att.data && !att.too_large) {
                             attachment = {
                                 type: 'image',
                                 name: att.name,
                                 data: att.data
                             };
-                            console.log('  Displaying single image:', att.name);
                         } else if (att.type === 'document') {
                             attachment = {
                                 type: 'pdf',
@@ -679,8 +176,6 @@
                     // Plain string content
                     textContent = msg.content;
                 }
-
-                console.log(`  Final: text="${textContent}", attachment=`, attachment);
 
                 if (textContent || attachment) {
                     addMessage(textContent || '', msg.role === 'user', attachment);
@@ -701,23 +196,19 @@
                     reader.onload = function (e) {
                         fileInfo.innerHTML = `
                             <div class="file-preview">
-                                <img src="${e.target.result}" style="max-width: 150px; max-height: 100px; border-radius: 4px; margin-right: 10px; vertical-align: middle;">
-                                <span>📷 ${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
-                                <span class="remove-file" onclick="removeFile()">✕</span>
+                                <img src="${e.target.result}" alt="">
+                                <span>${escapeHtml(file.name)} (${(file.size / 1024).toFixed(1)} KB)</span>
+                                <span class="remove-file" onclick="removeFile()" title="Remove">&times;</span>
                             </div>
                         `;
                     };
                     reader.readAsDataURL(file);
                 } else {
                     // For non-images, show file icon based on type
-                    let icon = '📄';
-                    if (fileExt === 'pdf') icon = '📕';
-                    else if (['py', 'java', 'cpp', 'c', 'js', 'html', 'css', 'txt'].includes(fileExt)) icon = '📝';
-
                     fileInfo.innerHTML = `
                         <div class="file-preview">
-                            ${icon} ${file.name} (${(file.size / 1024).toFixed(1)} KB)
-                            <span class="remove-file" onclick="removeFile()">✕</span>
+                            <span>${escapeHtml(file.name)} (${(file.size / 1024).toFixed(1)} KB)</span>
+                            <span class="remove-file" onclick="removeFile()" title="Remove">&times;</span>
                         </div>
                     `;
                 }
@@ -730,13 +221,29 @@
             document.getElementById('fileInfo').innerHTML = '';
         }
 
+        function escapeHtml(text) {
+            return String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // Light markdown: code fences (highlighted), `inline code`, **bold**.
+        // Everything else is escaped, so "if x < 5" shows as text, not HTML.
         function formatCodeBlocks(text) {
-            // Convert markdown code blocks to HTML with syntax highlighting
-            return text.replace(/```(\w+)?\n([\s\S]*?)```/g, function (match, lang, code) {
-                const language = lang || 'plaintext';
-                const highlighted = hljs.highlight(code.trim(), { language: language, ignoreIllegals: true }).value;
-                return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
-            }).replace(/`([^`]+)`/g, '<code>$1</code>');
+            const parts = String(text).split(/```([\w+#-]*)\n?([\s\S]*?)```/g);
+            let html = '';
+            for (let i = 0; i < parts.length; i += 3) {
+                let prose = parts[i];
+                if (i > 0) prose = prose.replace(/^\n+/, '');                 // after a code block
+                if (i + 2 < parts.length) prose = prose.replace(/\n+$/, '');  // before a code block
+                html += escapeHtml(prose)
+                    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+                    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+                if (i + 2 < parts.length) {
+                    const language = hljs.getLanguage(parts[i + 1]) ? parts[i + 1] : 'plaintext';
+                    const highlighted = hljs.highlight(parts[i + 2].replace(/\s+$/, ''), { language, ignoreIllegals: true }).value;
+                    html += `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
+                }
+            }
+            return html;
         }
 
         function addMessage(content, isUser, attachment = null) {
@@ -750,29 +257,25 @@
             // Handle attachment display
             if (attachment) {
                 const attachmentDiv = document.createElement('div');
-                attachmentDiv.style.marginBottom = '10px';
+                attachmentDiv.className = 'attach-wrap';
 
                 if (attachment.type === 'image') {
                     // Display image inline
                     const img = document.createElement('img');
                     img.src = attachment.data;
-                    img.style.maxWidth = '100%';
-                    img.style.borderRadius = '8px';
-                    img.style.marginBottom = '8px';
+                    img.className = 'attach-img';
                     attachmentDiv.appendChild(img);
                 } else if (attachment.type === 'pdf') {
                     // Show PDF indicator
                     attachmentDiv.innerHTML = `
-                        <div style="background: #f0f0f0; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-bottom: 8px;">
-                            📄 PDF: ${attachment.name}
-                        </div>
+                        <div class="attach-chip">PDF · ${escapeHtml(attachment.name)}</div>
                     `;
                 } else if (attachment.type === 'code') {
                     // Show code file with preview
                     attachmentDiv.innerHTML = `
-                        <div style="background: #2d2d2d; color: #f8f8f2; padding: 12px; border-radius: 8px; margin-bottom: 8px; font-family: 'Courier New', monospace; font-size: 13px; max-height: 200px; overflow-y: auto;">
-                            <div style="color: #888; margin-bottom: 8px;">📝 ${attachment.name}</div>
-                            <pre style="margin: 0; white-space: pre-wrap;">${attachment.preview}</pre>
+                        <div class="attach-code">
+                            <div class="attach-code-name">${escapeHtml(attachment.name)}</div>
+                            <pre>${escapeHtml(attachment.preview)}</pre>
                         </div>
                     `;
                 }
@@ -976,12 +479,10 @@
 
                     const contentDiv = document.createElement('div');
                     contentDiv.className = 'message-content';
-                    contentDiv.style.background = '#F9F8F6';
-                    contentDiv.style.border = '2px solid #C9B59C';
-                    contentDiv.style.maxWidth = '85%';
+                    contentDiv.classList.add('special');
 
                     // Format the response with code highlighting
-                    contentDiv.innerHTML = `<strong>Practice Resources: ${data.topic}</strong><br><br>` +
+                    contentDiv.innerHTML = `<div class="special-label">Practice resources${data.topic ? ' · ' + escapeHtml(data.topic) : ''}</div>` +
                         formatCodeBlocks(data.response);
 
                     practiceDiv.appendChild(contentDiv);
@@ -1066,12 +567,7 @@
                     const messagesDiv = document.getElementById('chatMessages');
                     const summaryDiv = document.createElement('div');
                     summaryDiv.className = 'message assistant';
-                    summaryDiv.innerHTML = `
-                        <div class="message-content" style="background: #D9CFC7; border: 2px solid #C9B59C; max-width: 85%;">
-                            <strong>📝 Session Summary</strong><br><br>
-                            ${data.summary.replace(/\n/g, '<br>')}
-                        </div>
-                    `;
+                    summaryDiv.innerHTML = `<div class="message-content special"><div class="special-label">Session summary</div><div>${formatCodeBlocks(data.summary)}</div></div>`;
                     messagesDiv.appendChild(summaryDiv);
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 } else {
@@ -1126,5 +622,4 @@
         document.getElementById('userInput').focus();
     </script>
 </body>
-
 </html>

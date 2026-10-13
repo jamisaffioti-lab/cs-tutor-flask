@@ -1,0 +1,23 @@
+{# Top bar. Pass `back` = (url, label) to show a back link on the left. #}
+<header class="as-bar">
+  <div class="as-bar-left">
+    {% if back %}
+    <a class="as-link" href="{{ back[0] }}">&larr; {{ back[1] }}</a>
+    {% else %}
+    <a class="as-logo" href="/dashboard"><span class="as-wordmark">Ascent Scholars</span></a>
+    {% endif %}
+  </div>
+  <a class="as-logo as-bar-center" href="/dashboard" aria-label="Ascent Scholars dashboard">
+    <img src="{{ url_for('static', filename='images/noros-logo.png') }}" alt="Noros Solutions">
+  </a>
+  <div class="as-bar-right">
+    {% if session.get('user_id') %}
+      {% if session.get('picture') %}
+      <img class="as-avatar" src="{{ session.get('picture') }}" alt="" referrerpolicy="no-referrer">
+      {% else %}
+      <span class="as-avatar">{{ (session.get('name') or '?')[0] }}</span>
+      {% endif %}
+      <a class="as-link" href="/logout">Log out</a>
+    {% endif %}
+  </div>
+</header>
