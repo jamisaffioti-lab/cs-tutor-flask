@@ -6,7 +6,11 @@
 <style>
   body { display: flex; flex-direction: column; }
   .page { flex: 1; display: grid; grid-template-columns: 1.15fr 1fr; min-height: calc(100vh - var(--bar-h)); }
-  .intro { padding: 72px 56px; display: flex; flex-direction: column; justify-content: center; }
+  .intro { position: relative; overflow: hidden; padding: 88px 56px 0; display: flex; flex-direction: column; }
+  .intro > * { position: relative; z-index: 1; }
+  /* Jami's neuro-mountain, kept to the sign-in page as artwork */
+  .intro::after { content: ''; position: absolute; left: 0; right: 0; bottom: -4%; height: 52%; z-index: 0; pointer-events: none;
+    background: url('/static/images/mountain-light.jpg') center bottom / contain no-repeat; mix-blend-mode: multiply; opacity: 0.55; }
   .intro .eyebrow { margin-bottom: 20px; }
   .intro .display { font-size: clamp(40px, 6vw, 72px); margin-bottom: 22px; }
   .intro .lede { max-width: 520px; }
@@ -24,13 +28,14 @@
   .error strong { font-family: var(--font-label); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; display: block; margin-bottom: 4px; }
   @media (max-width: 860px) {
     .page { grid-template-columns: 1fr; }
-    .intro { padding: 48px 16px 32px; }
+    .intro { padding: 48px 16px 200px; }
+    .intro::after { height: 190px; }
     .panel { padding: 8px 16px 56px; }
     .panel-inner { padding: 28px 22px; }
   }
 </style>
 </head>
-<body class="mountain">
+<body>
 {% include 'partials/bar.html' %}
 
 <div class="page">
