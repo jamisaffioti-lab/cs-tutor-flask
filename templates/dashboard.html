@@ -1,421 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>my learning dashboard</title>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Courier New', monospace;
-            color: #ffffff;
-            min-height: 100vh;
-            padding: 20px;
-            position: relative;
-        }
+{% include 'partials/head.html' %}
+<title>Dashboard · Ascent Scholars</title>
+<style>
+  main { max-width: 1120px; margin: 0 auto; padding: 56px 32px 96px; }
+  .hero { padding: 8px 0 48px; border-bottom: var(--rule); margin-bottom: 48px; }
+  .hero .eyebrow { margin-bottom: 18px; }
+  .hero .display { font-size: clamp(38px, 5.5vw, 64px); margin-bottom: 16px; }
+  .hero .lede { max-width: 620px; }
 
-        /* Mountain background */
-        .mountain-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('{{ url_for("static", filename="images/norosBbg.png") }}');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            z-index: -1;
-        }
+  section { margin-bottom: 56px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+  .section-head .eyebrow { margin-bottom: 8px; }
+  .section-head h2 { font-size: clamp(26px, 3.4vw, 36px); }
+  .section-note { color: var(--text-muted); max-width: 360px; text-align: right; }
 
-        .mountain-background::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.3);
-        }
+  .grid { display: grid; gap: 2px; background: var(--grid-gap); border: var(--rule); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid .card { border: none; border-radius: 0; padding: 22px; display: flex; gap: 16px; align-items: flex-start; min-height: 112px; }
+  .grid a.card:hover { transform: none; background: var(--bg); box-shadow: inset 0 -3px 0 var(--accent-fill); }
+  .card-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; line-height: 1.15; margin-bottom: 4px; }
+  .card-sub { color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
+  .card-tag { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 6px; }
 
-        .base-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000000;
-            z-index: -2;
-        }
-        
-        .header {
-            background: rgba(0, 0, 0, 0.72);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 15px;
-            padding: 20px 30px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            backdrop-filter: blur(30px);
-        }
-        
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: 2px solid #8cc9f0;
-        }
-        
-        .user-info h2 {
-            font-family: 'Orbitron', sans-serif;
-            color: #ffffff;
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-        
-        .user-info p {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
-        }
-        
-        .header-right {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .btn-primary {
-            background: rgba(140, 201, 240, 0.25);
-            border: 1px solid rgba(140, 201, 240, 0.4);
-            color: #ffffff;
-        }
-        
-        .btn-primary:hover {
-            background: rgba(140, 201, 240, 0.35);
-            transform: translateY(-2px);
-        }
-        
-        .btn-secondary {
-            background: rgba(140, 201, 240, 0.15);
-            border: 1px solid rgba(140, 201, 240, 0.3);
-            color: #8cc9f0;
-        }
-        
-        .btn-secondary:hover {
-            background: rgba(140, 201, 240, 0.25);
-            transform: translateY(-2px);
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .section-title {
-            font-family: 'Orbitron', sans-serif;
-            color: #ffffff;
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
-            text-transform: lowercase;
-        }
-        
-        .subjects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 50px;
-        }
-        
-        .subject-card {
-            background: rgba(140, 201, 240, 0.2);
-            border: 1px solid rgba(140, 201, 240, 0.4);
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            text-decoration: none;
-            color: #ffffff;
-            backdrop-filter: blur(15px);
-        }
-        
-        .subject-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(140, 201, 240, 0.4);
-            background: rgba(140, 201, 240, 0.3);
-            border-color: rgba(140, 201, 240, 0.6);
-        }
-        
-        .subject-icon {
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 70px;
-        }
-        
-        .subject-icon img {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-        }
-        
-        .subject-name {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: lowercase;
-        }
-        
-        .conversations-section {
-            background: rgba(0, 0, 0, 0.72);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            backdrop-filter: blur(30px);
-        }
-        
-        .conversations-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid rgba(140, 201, 240, 0.3);
-        }
-        
-        .conversations-header h3 {
-            font-family: 'Orbitron', sans-serif;
-            color: #ffffff;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: lowercase;
-        }
-        
-        .conversations-header img {
-            filter: brightness(1.2);
-        }
-        
-        .conversation-list {
-            display: grid;
-            gap: 15px;
-        }
-        
-        .conversation-item {
-            background: rgba(140, 201, 240, 0.1);
-            border: 1px solid rgba(140, 201, 240, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .conversation-item:hover {
-            border-color: #8cc9f0;
-            background: rgba(140, 201, 240, 0.2);
-            box-shadow: 0 3px 10px rgba(140, 201, 240, 0.3);
-        }
-        
-        .conversation-info {
-            flex: 1;
-        }
-        
-        .conversation-title {
-            color: #ffffff;
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        
-        .conversation-meta {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 13px;
-        }
-        
-        .conversation-subject {
-            display: inline-block;
-            background: rgba(140, 201, 240, 0.3);
-            color: #8cc9f0;
-            border: 1px solid rgba(140, 201, 240, 0.4);
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            margin-left: 10px;
-            font-weight: 700;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
-        .empty-state-icon {
-            margin-bottom: 15px;
-        }
-        
-        .empty-state-icon img {
-            filter: brightness(1.2);
-        }
-        
-        .empty-state h4 {
-            font-size: 20px;
-            margin-bottom: 10px;
-            color: #8cc9f0;
-            font-weight: 700;
-        }
-        
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .header-right {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .subjects-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  .convos { border: var(--rule); background: var(--surface); }
+  .convo { display: grid; grid-template-columns: 1fr auto auto; gap: 20px; align-items: center; padding: 16px 22px; border-bottom: var(--rule); text-decoration: none; color: inherit; }
+  .convo:last-child { border-bottom: none; }
+  .convo:hover { background: var(--bg); }
+  .convo-title { font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .convo-subject { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap; }
+  .convo-date { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+  .empty { padding: 36px 22px; color: var(--text-secondary); font-family: var(--font-display); font-style: italic; font-size: 18px; }
+
+  @media (max-width: 900px) { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 620px) {
+    main { padding: 36px 16px 64px; }
+    .grid-3, .grid-2 { grid-template-columns: 1fr; }
+    .section-head { flex-direction: column; align-items: flex-start; }
+    .section-note { text-align: left; }
+    .convo { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
 </head>
 <body>
-    <div class="base-background"></div>
-    <div class="mountain-background"></div>
-    
-    <div class="container">
-        <div class="header">
-            <div class="header-left">
-                {% if user.picture %}
-                <img src="{{ user.picture }}" alt="user" class="user-avatar">
-                {% else %}
-                <div class="user-avatar" style="background: rgba(140, 201, 240, 0.3); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700;">
-                    {{ user.name[0] if user.name else '?' }}
-                </div>
-                {% endif %}
-                <div class="user-info">
-                    <h2>welcome back, {{ user.name or 'student' }}!</h2>
-                    <p>{{ user.email }}</p>
-                </div>
-            </div>
-            <div class="header-right">
-                <a href="/" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px;">
-                    <img src="{{ url_for('static', filename='images/home.png') }}" alt="" style="width: 18px; height: 18px; filter: brightness(1.2);">
-                    home
-                </a>
-                <a href="/logout" class="btn btn-secondary">logout</a>
-            </div>
-        </div>
-        
-        <h2 class="section-title">start a new session</h2>
-        <div class="subjects-grid">
-            {% for key, subject in subjects.items() %}
-            <a href="/chat/{{ key }}" class="subject-card">
-                <div class="subject-icon">
-                    <img src="{{ url_for('static', filename='images/' + subject.icon) }}" alt="{{ subject.name }}">
-                </div>
-                <div class="subject-name">{{ subject.name }}</div>
-            </a>
-            {% endfor %}
-        </div>
+{% include 'partials/bar.html' %}
 
-        <h2 class="section-title">practice</h2>
-        <div class="subjects-grid">
-            <a href="/lab" class="subject-card">
-                <div class="subject-icon">
-                    <img src="{{ url_for('static', filename='images/pysnake.png') }}" alt="Python lab">
-                </div>
-                <div class="subject-name">Python lab: bigram predictor</div>
-            </a>
-            <a href="/check" class="subject-card">
-                <div class="subject-icon">
-                    <img src="{{ url_for('static', filename='images/bullseye.png') }}" alt="Check the AI">
-                </div>
-                <div class="subject-name">Check the AI's code (AP CSP)</div>
-            </a>
-        </div>
+<main>
+  <div class="hero">
+    <div class="eyebrow">Ascent Scholars</div>
+    <h1 class="display">Welcome back,<br><em>{{ (user.name or 'scholar').split(' ')[0] }}.</em></h1>
+    <p class="lede">Ask a tutor, work through a lab, or check an AI's code. Everything you need for AP CS lives here.</p>
+  </div>
 
-        <div class="conversations-section">
-            <div class="conversations-header">
-                <h3 style="display: flex; align-items: center; gap: 10px;">
-                    <img src="{{ url_for('static', filename='images/convers.png') }}" alt="" style="width: 28px; height: 28px;">
-                    your recent conversations
-                </h3>
-            </div>
-            {% if conversations %}
-            <div class="conversation-list">
-                {% for conv in conversations %}
-                <div class="conversation-item" onclick="openConversation('{{ conv.subject }}', {{ conv.id }})">
-                    <div class="conversation-info">
-                        <div class="conversation-title">{{ conv.title or 'untitled conversation' }}</div>
-                        <div class="conversation-meta">
-                            last updated: {{ conv.updated_at }}
-                            <span class="conversation-subject">{{ subjects[conv.subject].name }}</span>
-                        </div>
-                    </div>
-                    <div style="color: #8cc9f0; font-size: 20px;">→</div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <img src="{{ url_for('static', filename='images/bubble.png') }}" alt="" style="max-width: 80px;">
-                </div>
-                <h4>no conversations yet</h4>
-                <p>start learning by selecting a subject above!</p>
-            </div>
-            {% endif %}
-        </div>
+  <section>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Practice</div>
+        <h2 class="display">Build and check</h2>
+      </div>
     </div>
+    <div class="grid grid-2">
+      <a class="card" href="/lab">
+        <div class="icon-tile"><img src="{{ url_for('static', filename='images/pysnake.png') }}" alt=""></div>
+        <div>
+          <span class="card-tag">The AI Architect · 4 weeks</span>
+          <div class="card-title">Python lab</div>
+          <div class="card-sub">Build a prediction model from scratch, one lesson at a time. Your code runs right in the browser.</div>
+        </div>
+      </a>
+      <a class="card" href="/check">
+        <div class="icon-tile"><img src="{{ url_for('static', filename='images/bullseye.png') }}" alt=""></div>
+        <div>
+          <span class="card-tag">AP CSP · 2 tasks</span>
+          <div class="card-title">Check the AI's code</div>
+          <div class="card-sub">An AI wrote some code. Find what's wrong, fix it, and leave what's right alone.</div>
+        </div>
+      </a>
+    </div>
+  </section>
 
-    <script>
-        function openConversation(subject, conversationId) {
-            window.location.href = `/chat/${subject}?conversation_id=${conversationId}`;
-        }
-    </script>
+  <section>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Tutors</div>
+        <h2 class="display">Ask a tutor</h2>
+      </div>
+      <p class="section-note">Each tutor guides you with questions instead of handing you the answer.</p>
+    </div>
+    <div class="grid grid-3">
+      {% for key, subject in subjects.items() %}
+      <a class="card" href="/chat/{{ key }}">
+        <div class="icon-tile"><img src="{{ url_for('static', filename='images/' + subject.icon) }}" alt=""></div>
+        <div>
+          <div class="card-title">{{ subject.name }}</div>
+          <div class="card-sub">{{ subject.examples[0] if subject.examples else '' }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Recent</div>
+        <h2 class="display">Your conversations</h2>
+      </div>
+    </div>
+    <div class="convos">
+      {% for conv in conversations %}
+      <a class="convo" href="/chat/{{ conv.subject }}?conversation_id={{ conv.id }}">
+        <span class="convo-title">{{ conv.title or 'Untitled conversation' }}</span>
+        <span class="convo-subject">{{ subjects[conv.subject].name if conv.subject in subjects else conv.subject }}</span>
+        <span class="convo-date">{{ (conv.updated_at or '')[:10] }}</span>
+      </a>
+      {% else %}
+      <div class="empty">No conversations yet. Pick a tutor above to start one.</div>
+      {% endfor %}
+    </div>
+  </section>
+</main>
 </body>
 </html>
