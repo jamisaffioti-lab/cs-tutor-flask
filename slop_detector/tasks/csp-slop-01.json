@@ -1,0 +1,23 @@
+{
+  "task_id": "csp-slop-01",
+  "competency": "C2",
+  "language": "python",
+  "entrypoint": "class_average",
+  "prompt": "Return the average of passing scores (>= 60) in a 0-100 list, rounded to 1 decimal; return 0 if none pass.",
+  "buggy_code": "def class_average(scores):\n    passing = []\n    for i in range(1, len(scores)):\n        if scores[i] >= 60 and scores[i] <= 100:\n            passing.append(scores[i])\n    average = sum(passing) / len(passing)\n    return round(average, 1, ROUND_HALF_UP)\n",
+  "defects": [
+    {"id": "d1", "type": "functional_bug", "locator": "range(1, len(scores))", "is_trap": false},
+    {"id": "d2", "type": "edge_case", "locator": "sum(passing) / len(passing)", "is_trap": false},
+    {"id": "d3", "type": "hallucination", "locator": "round(average, 1, ROUND_HALF_UP)", "is_trap": false},
+    {"id": "d4", "type": "trap_correct", "locator": "and scores[i] <= 100", "is_trap": true, "signature": "<= 100"}
+  ],
+  "hidden_tests": [
+    {"input": [[90, 80, 55, 40]], "expected": 85.0, "catches": ["d1"]},
+    {"input": [[60, 70, 100]], "expected": 76.7, "catches": ["d1"]},
+    {"input": [[50, 40, 30]], "expected": 0, "catches": ["d2"]},
+    {"input": [[100]], "expected": 100.0, "catches": ["d1", "d2"]},
+    {"input": [[]], "expected": 0, "catches": ["d2"]}
+  ],
+  "reference_solution": "def class_average(scores):\n    passing = [s for s in scores if s >= 60 and s <= 100]\n    if not passing:\n        return 0\n    return round(sum(passing) / len(passing), 1)\n",
+  "rubric_id": "c2-slop-detector-v1"
+}

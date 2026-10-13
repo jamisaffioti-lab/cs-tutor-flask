@@ -7,21 +7,12 @@
     const accessToken = params.get('access_token');
 
     if (accessToken) {
-        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { 'Authorization': 'Bearer ' + accessToken }
-        })
-        .then(r => r.json())
-        .then(user => {
-            return fetch('/auth/google/callback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    google_id: user.sub,
-                    email: user.email,
-                    name: user.name,
-                    picture: user.picture
-                })
-            });
+        // Send only the token; the server verifies it with Google itself.
+        history.replaceState(null, '', window.location.pathname);
+        fetch('/auth/google/callback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: accessToken })
         })
         .then(r => r.json())
         .then(data => {

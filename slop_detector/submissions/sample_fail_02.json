@@ -1,0 +1,10 @@
+{
+  "task_id": "csp-slop-02",
+  "student_id": "stu_fail_02",
+  "flags": [
+    {"line": 3, "claimed_type": "functional_bug", "explanation": "thought the loop starting at 1 was an off-by-one and skipped a day"},
+    {"line": 6, "claimed_type": "edge_case", "explanation": "crashes when nobody qualifies"}
+  ],
+  "edited_code": "def warmer_avg(temps):\n    warmer = []\n    for i in range(0, len(temps)):\n        if temps[i] > temps[0]:\n            warmer.append(temps[i])\n    if not warmer:\n        return 0\n    return round(sum(warmer) / len(warmer), 1)\n",
+  "submitted_at": "2026-09-21T21:32:00Z"
+}

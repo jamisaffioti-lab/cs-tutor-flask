@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<!-- Ascent Scholars IDE (from The AI Architect prototype, May 2026). Served at /lab. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Architect · IDE · Ascent Scholars · Noros</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --cream:    #F7F4EE;
+    --cream2:   #EDE9DF;
+    --sage:     #7A9E87;
+    --sage-lt:  #B8D4C0;
+    --sage-dk:  #4E7260;
+    --clay:     #b68877;
+    --clay-lt:  #ddb8a8;
+    --stone:    #6B6860;
+    --ink:      #2C2A25;
+    --ink-lt:   #4A4840;
+    --white:    #FFFFFF;
+    --term-bg:  #1E1C18;
+    --term-txt: #C8C4B8;
+    --term-grn: #7EC8A0;
+    --term-red: #E07070;
+    --term-dim: #6B6860;
+    --panel-w:  340px;
+    --header-h: 52px;
+    --font:     'DM Sans', sans-serif;
+    --mono:     'DM Mono', monospace;
+    --radius:   10px;
+    --shadow:   0 2px 12px rgba(44,42,37,.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--cream);
+    color: var(--ink);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    height: var(--header-h);
+    background: var(--white);
+    border-bottom: 1px solid var(--cream2);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+    box-shadow: var(--shadow);
+    z-index: 10;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .logo-mark {
+    width: 30px;
+    height: 30px;
+  }
+
+  .logo-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -.3px;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--stone);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+
+  .header-divider {
+    width: 1px;
+    height: 22px;
+    background: var(--cream2);
+  }
+
+  .module-badge {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sage-dk);
+    background: #EAF3EE;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--sage-lt);
+  }
+
+  .lesson-title {
+    font-size: 13px;
+    color: var(--stone);
+    font-weight: 400;
+  }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .progress-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cream2);
+    border: 1px solid var(--sage-lt);
+  }
+
+  .dot.active {
+    background: var(--sage);
+    border-color: var(--sage);
+  }
+
+  .dot.done {
+    background: var(--sage-lt);
+    border-color: var(--sage);
+  }
+
+  /* ── Main layout ── */
+  .workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Lesson panel ── */
+  .lesson-panel {
+    width: var(--panel-w);
+    flex-shrink: 0;
+    background: var(--white);
+    border-right: 1px solid var(--cream2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .lesson-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 22px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cream2) transparent;
+  }
+
+  .lesson-scroll::-webkit-scrollbar { width: 4px; }
+  .lesson-scroll::-webkit-scrollbar-thumb { background: var(--cream2); border-radius: 4px; }
+
+  .lesson-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--sage);
+    margin-bottom: 6px;
+  }
+
+  .lesson-heading {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.25;
+    letter-spacing: -.4px;
+    margin-bottom: 14px;
+  }
+
+  .lesson-body {
+    font-size: 13.5px;
+    color: var(--ink-lt);
+    line-height: 1.75;
+  }
+
+  .lesson-body p { margin-bottom: 14px; }
+
+  .callout {
+    background: #EAF3EE;
+    border-left: 3px solid var(--sage);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--sage-dk);
+    line-height: 1.6;
+    margin: 16px 0;
+  }
+
+  .callout strong {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 3px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .step-list {
+    list-style: none;
+    counter-reset: steps;
+    margin: 16px 0;
+  }
+
+  .step-list li {
+    counter-increment: steps;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-size: 13.5px;
+    color: var(--ink-lt);
+    line-height: 1.6;
+  }
+
+  .step-list li::before {
+    content: counter(steps);
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--sage);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  .inline-code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--cream2);
+    color: var(--clay);
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid #DDD8CE;
+  }
+
+  .challenge-box {
+    background: var(--cream);
+    border: 1px solid var(--clay-lt);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-top: 20px;
+  }
+
+  .challenge-box .eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--clay);
+    margin-bottom: 6px;
+  }
+
+  .challenge-box p {
+    font-size: 13px;
+    color: var(--ink-lt);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .lesson-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--cream2);
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    border: none;
+    transition: all .15s;
+  }
+
+  .btn-primary {
+    background: var(--sage);
+    color: white;
+    flex: 1;
+  }
+
+  .btn-primary:hover { background: var(--sage-dk); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--stone);
+    border: 1px solid var(--cream2);
+  }
+
+  .btn-ghost:hover { background: var(--cream); }
+
+  /* ── Editor + output area ── */
+  .editor-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .editor-topbar {
+    height: 40px;
+    background: var(--white);
+    border-bottom: 1px solid var(--cream2);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .file-tab {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--stone);
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: var(--cream);
+    border: 1px solid var(--cream2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .file-tab .dot-py {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--clay);
+  }
+
+  .run-btn {
+    margin-left: auto;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 16px;
+    background: var(--sage);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: all .15s;
+    letter-spacing: .01em;
+  }
+
+  .run-btn:hover { background: var(--sage-dk); }
+  .run-btn:active { transform: scale(.97); }
+  .run-btn:disabled { background: var(--sage-lt); cursor: not-allowed; }
+
+  .run-icon {
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid white;
+  }
+
+  .run-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .editor-container {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ── Output terminal ── */
+  .output-panel {
+    height: 220px;
+    flex-shrink: 0;
+    background: var(--term-bg);
+    border-top: 1px solid #2E2C28;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .output-topbar {
+    height: 34px;
+    background: #252320;
+    border-bottom: 1px solid #2E2C28;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .output-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--term-dim);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-family: var(--mono);
+  }
+
+  .output-status {
+    margin-left: auto;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--term-dim);
+  }
+
+  .output-status.ok { color: var(--term-grn); }
+  .output-status.err { color: var(--term-red); }
+
+  .clear-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--term-dim);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: color .15s;
+  }
+
+  .clear-btn:hover { color: var(--term-txt); }
+
+  .output-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--term-txt);
+    scrollbar-width: thin;
+    scrollbar-color: #3A3830 transparent;
+  }
+
+  .output-scroll::-webkit-scrollbar { width: 4px; }
+  .output-scroll::-webkit-scrollbar-thumb { background: #3A3830; border-radius: 4px; }
+
+  .out-prompt { color: var(--term-dim); }
+  .out-success { color: var(--term-grn); }
+  .out-error { color: var(--term-red); }
+  .out-info { color: #7EB8D4; }
+  .out-line { white-space: pre-wrap; word-break: break-all; }
+
+  /* ── Resize handle ── */
+  .resize-handle {
+    height: 4px;
+    background: transparent;
+    cursor: ns-resize;
+    flex-shrink: 0;
+    transition: background .15s;
+  }
+
+  .resize-handle:hover { background: var(--sage-lt); }
+
+  /* ── Curriculum sidebar ── */
+  .curriculum-sidebar {
+    width: 200px;
+    flex-shrink: 0;
+    background: #F2EFE8;
+    border-right: 1px solid var(--cream2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .curriculum-header {
+    padding: 14px 16px 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--stone);
+    border-bottom: 1px solid var(--cream2);
+  }
+  .curriculum-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cream2) transparent;
+  }
+  .week-group { margin-bottom: 4px; }
+  .week-label {
+    padding: 6px 16px 4px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sage-dk);
+    font-family: 'Syne', sans-serif;
+  }
+  .lesson-item {
+    padding: 7px 16px 7px 22px;
+    font-size: 11px;
+    color: var(--stone);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1.4;
+    border-left: 2px solid transparent;
+    margin-left: 8px;
+  }
+  .lesson-item:hover { background: var(--cream2); color: var(--ink); }
+  .lesson-item.active {
+    background: white;
+    color: var(--sage-dk);
+    border-left-color: var(--sage);
+    font-weight: 500;
+  }
+  .lesson-item.locked { opacity: 0.4; cursor: not-allowed; }
+  .lesson-item.locked:hover { background: none; color: var(--stone); }
+  .lesson-type {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--clay);
+    margin-right: 4px;
+  }
+  .lesson-type.lab { color: var(--sage); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <img src="/static/images/ascent-ide-logo.png" alt="Noros Solutions" style="height:32px; width:auto;">
+    <span class="logo-text" style="font-family:'Syne',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase;">Ascent Scholars</span>
+  </div>
+  <div class="header-divider"></div>
+  <span class="module-badge" style="font-family:'Syne',sans-serif; font-size:11px; letter-spacing:0.08em;">Week 1 · The Probability Engine</span>
+  <span class="lesson-title">Lab — Build the bigram predictor</span>
+  <div class="header-right">
+    <a href="/dashboard" style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--sage-dk);text-decoration:none;margin-right:14px;">← Dashboard</a>
+    <div class="progress-dots">
+      <div class="dot done"></div>
+      <div class="dot done"></div>
+      <div class="dot active"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+</header>
+
+<!-- Workspace -->
+<div class="workspace">
+
+  <!-- Curriculum sidebar -->
+  <div class="curriculum-sidebar">
+    <div class="curriculum-header">⛰ AI Architect</div>
+    <div class="curriculum-scroll">
+
+      <div class="week-group">
+        <div class="week-label">Week 1 · Probability</div>
+        <div class="lesson-item">Lesson 1 — What is a model?</div>
+        <div class="lesson-item">Lesson 2 — Counting &amp; probability</div>
+        <div class="lesson-item active"><span class="lesson-type lab">Lab</span>Bigram predictor</div>
+      </div>
+
+      <div class="week-group">
+        <div class="week-label">Week 2 · Data</div>
+        <div class="lesson-item locked">Lesson 1 — Raw data</div>
+        <div class="lesson-item locked">Lesson 2 — Tensors &amp; NumPy</div>
+        <div class="lesson-item locked"><span class="lesson-type lab">Lab</span>Data engineer</div>
+      </div>
+
+      <div class="week-group">
+        <div class="week-label">Week 3 · Neural Layer</div>
+        <div class="lesson-item locked">Lesson 1 — One neuron</div>
+        <div class="lesson-item locked">Lesson 2 — Loss &amp; gradient</div>
+        <div class="lesson-item locked"><span class="lesson-type lab">Lab</span>Mini-network</div>
+      </div>
+
+      <div class="week-group">
+        <div class="week-label">Week 4 · Portfolio</div>
+        <div class="lesson-item locked">Lesson 1 — Streamlit intro</div>
+        <div class="lesson-item locked">Lesson 2 — Design for humans</div>
+        <div class="lesson-item locked"><span class="lesson-type lab">Lab</span>Capstone demo</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Lesson panel -->
+  <div class="lesson-panel">
+    <div class="lesson-scroll">
+      <div class="lesson-eyebrow">Week 1 · Lab</div>
+      <h1 class="lesson-heading">Build the bigram predictor</h1>
+
+      <div class="lesson-body">
+        <p>You've seen the theory. Now you're going to write the math from scratch — no libraries, no magic, just Python dictionaries and a little probability.</p>
+
+        <p>By the end of this lab, your program will read a list of skateboarding tricks and predict what trick is most likely to come next. This is the exact same logic powering every large language model on the planet.</p>
+      </div>
+
+      <div class="callout">
+        <strong>The core idea</strong>
+        A bigram model counts how often word B follows word A. Then it divides by the total count to turn those numbers into probabilities. That's it.
+      </div>
+
+      <div class="lesson-body">
+        <p><strong style="color:var(--ink);font-weight:600;">Your tasks:</strong></p>
+      </div>
+
+      <ol class="step-list">
+        <li>Loop through the trick list and build a <span class="inline-code">counts</span> dictionary that stores how often each trick follows each other trick.</li>
+        <li>Convert those counts to probabilities by dividing each count by the total for that starter trick.</li>
+        <li>Write a <span class="inline-code">predict_next(trick)</span> function that returns the most probable next trick.</li>
+        <li><em>Stretch:</em> add a <span class="inline-code">generate_sequence(start, n)</span> function that chains predictions together into a full trick line.</li>
+      </ol>
+
+      <div class="callout">
+        <strong>Hint</strong>
+        The starter code already loads your dataset as a list of strings called <span class="inline-code">tricks</span>. Use <span class="inline-code">zip(tricks, tricks[1:])</span> to get every consecutive pair in one loop.
+      </div>
+
+      <div class="challenge-box">
+        <div class="eyebrow">Stretch challenge</div>
+        <p>Change the dataset to a list of your own words — your name, your pet's name, whatever you want. Does the model "feel" different? Why?</p>
+      </div>
+    </div>
+
+    <div class="lesson-footer">
+      <button class="btn btn-ghost" onclick="loadSolution()">Show solution</button>
+      <button class="btn btn-primary" onclick="nextLesson()">Next lesson →</button>
+    </div>
+  </div>
+
+  <!-- Editor + output -->
+  <div class="editor-area">
+
+    <!-- Editor topbar -->
+    <div class="editor-topbar">
+      <div class="file-tab">
+        <div class="dot-py"></div>
+        bigram_predictor.py
+      </div>
+      <button class="run-btn" id="runBtn" onclick="runCode()">
+        <div class="run-icon" id="runIcon"></div>
+        <div class="run-spinner" id="runSpinner"></div>
+        Run
+      </button>
+    </div>
+
+    <!-- Monaco editor -->
+    <div class="editor-container" id="editor"></div>
+
+    <!-- Resize handle -->
+    <div class="resize-handle" id="resizeHandle"></div>
+
+    <!-- Output terminal -->
+    <div class="output-panel" id="outputPanel">
+      <div class="output-topbar">
+        <span class="output-label">Output</span>
+        <span class="output-status" id="outputStatus">ready</span>
+        <button class="clear-btn" onclick="clearOutput()">clear</button>
+      </div>
+      <div class="output-scroll" id="outputScroll">
+        <div class="out-line out-info"># Ascent Scholars · Week 1 Lab</div>
+        <div class="out-line out-info"># Click Run to execute your code</div>
+        <div class="out-line out-prompt"> </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STARTER_CODE = `# Week 1 Lab — Build the Bigram Predictor
+# ─────────────────────────────────────────
+# Your dataset: a sequence of skateboard tricks
+# Each consecutive pair is one "observation"
+
+tricks = [
+    "Ollie", "Kickflip", "Heelflip", "360 Flip",
+    "Kickflip", "Varial Flip", "Heelflip", "Kickflip",
+    "Ollie", "Nollie", "Kickflip", "360 Flip",
+    "Hardflip", "Kickflip", "Heelflip", "Varial Flip",
+    "Ollie", "Kickflip", "Nollie", "Ollie",
+    "Kickflip", "360 Flip", "Heelflip", "Kickflip",
+    "Boardslide", "Ollie", "Nosegrind", "Kickflip",
+    "Ollie", "Heelflip", "360 Flip", "Kickflip",
+]
+
+# ── STEP 1 ──────────────────────────────
+# Build a counts dictionary.
+# counts["Ollie"]["Kickflip"] = number of times
+# Kickflip followed Ollie in the list above.
+
+counts = {}
+
+for current, next_trick in zip(tricks, tricks[1:]):
+    pass  # YOUR CODE HERE
+
+
+# ── STEP 2 ──────────────────────────────
+# Convert counts → probabilities.
+# For each starter trick, divide each count
+# by the total count for that trick.
+
+probs = {}
+
+# YOUR CODE HERE
+
+
+# ── STEP 3 ──────────────────────────────
+# Write predict_next(trick).
+# Return the next trick with the highest probability.
+
+def predict_next(trick):
+    pass  # YOUR CODE HERE
+
+
+# ── TEST IT ─────────────────────────────
+print("After Ollie, the model predicts:", predict_next("Ollie"))
+print("After Kickflip, the model predicts:", predict_next("Kickflip"))
+print("After Heelflip, the model predicts:", predict_next("Heelflip"))
+`;
+
+const SOLUTION_CODE = `# Week 1 Lab — SOLUTION
+# ─────────────────────────────────────────
+
+tricks = [
+    "Ollie", "Kickflip", "Heelflip", "360 Flip",
+    "Kickflip", "Varial Flip", "Heelflip", "Kickflip",
+    "Ollie", "Nollie", "Kickflip", "360 Flip",
+    "Hardflip", "Kickflip", "Heelflip", "Varial Flip",
+    "Ollie", "Kickflip", "Nollie", "Ollie",
+    "Kickflip", "360 Flip", "Heelflip", "Kickflip",
+    "Boardslide", "Ollie", "Nosegrind", "Kickflip",
+    "Ollie", "Heelflip", "360 Flip", "Kickflip",
+]
+
+# STEP 1 — Count consecutive pairs
+counts = {}
+for current, next_trick in zip(tricks, tricks[1:]):
+    if current not in counts:
+        counts[current] = {}
+    counts[current][next_trick] = counts[current].get(next_trick, 0) + 1
+
+# STEP 2 — Convert to probabilities
+probs = {}
+for trick, following in counts.items():
+    total = sum(following.values())
+    probs[trick] = {k: v / total for k, v in following.items()}
+
+# STEP 3 — Predict most likely next trick
+def predict_next(trick):
+    if trick not in probs:
+        return "Unknown trick"
+    return max(probs[trick], key=probs[trick].get)
+
+# STRETCH — Generate a sequence
+def generate_sequence(start, n=5):
+    sequence = [start]
+    current = start
+    for _ in range(n - 1):
+        nxt = predict_next(current)
+        if nxt == "Unknown trick":
+            break
+        sequence.append(nxt)
+        current = nxt
+    return " → ".join(sequence)
+
+# Test it
+print("After Ollie    →", predict_next("Ollie"))
+print("After Kickflip →", predict_next("Kickflip"))
+print("After Heelflip →", predict_next("Heelflip"))
+print()
+print("Generated sequence:")
+print(generate_sequence("Ollie", 6))
+print()
+print("The bigram counts for 'Ollie':")
+for trick, prob in sorted(probs.get("Ollie", {}).items(), key=lambda x: -x[1]):
+    bar = "█" * int(prob * 20)
+    print(f"  {trick:<15} {bar} {prob:.0%}")
+`;
+
+let editor;
+let outputPanel = document.getElementById('outputPanel');
+let outputPanelHeight = 220;
+let isResizing = false;
+
+require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+  monaco.editor.defineTheme('noros', {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: 'A09888', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '4E7260', fontStyle: 'bold' },
+      { token: 'string', foreground: 'C47B5A' },
+      { token: 'number', foreground: '7A9E87' },
+      { token: 'identifier', foreground: '2C2A25' },
+    ],
+    colors: {
+      'editor.background': '#FAFAF7',
+      'editor.foreground': '#2C2A25',
+      'editorLineNumber.foreground': '#C4BFB2',
+      'editorLineNumber.activeForeground': '#7A9E87',
+      'editor.lineHighlightBackground': '#F2EFE8',
+      'editorCursor.foreground': '#7A9E87',
+      'editor.selectionBackground': '#B8D4C040',
+      'editorIndentGuide.background': '#EDE9DF',
+      'editorIndentGuide.activeBackground': '#B8D4C0',
+    }
+  });
+
+  editor = monaco.editor.create(document.getElementById('editor'), {
+    value: STARTER_CODE,
+    language: 'python',
+    theme: 'noros',
+    fontSize: 13.5,
+    fontFamily: "'DM Mono', monospace",
+    fontLigatures: true,
+    lineHeight: 22,
+    padding: { top: 16, bottom: 16 },
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    renderLineHighlight: 'line',
+    smoothScrolling: true,
+    cursorBlinking: 'smooth',
+    cursorSmoothCaretAnimation: 'on',
+    tabSize: 4,
+    wordWrap: 'on',
+  });
+});
+
+// ── Run button ──
+// Code runs with Pyodide (real Python compiled to WebAssembly) inside a Web
+// Worker in the student's own browser: no server, no API key, and nothing a
+// student writes can touch the server. A stuck loop is stopped after 10s.
+const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
+const RUN_TIMEOUT_MS = 10000;
+let pyWorker = null;
+let pyReady = null;
+
+function workerSource() {
+  return `
+    importScripts('${PYODIDE_URL}pyodide.js');
+    let pyodide = null;
+    const ready = (async () => {
+      pyodide = await loadPyodide({ indexURL: '${PYODIDE_URL}' });
+      postMessage({ type: 'ready' });
+    })();
+    onmessage = async (e) => {
+      await ready;
+      pyodide.setStdout({ batched: (t) => postMessage({ type: 'out', text: t }) });
+      pyodide.setStderr({ batched: (t) => postMessage({ type: 'err', text: t }) });
+      try {
+        await pyodide.loadPackagesFromImports(e.data.code);
+        await pyodide.runPythonAsync(e.data.code);
+        postMessage({ type: 'done', ok: true });
+      } catch (err) {
+        const lines = String(err.message || err).trim().split('\\n');
+        const i = lines.findIndex(l => l.includes('File "<exec>"'));
+        postMessage({ type: 'err', text: (i >= 0 ? lines.slice(i) : lines.slice(-4)).join('\\n') });
+        postMessage({ type: 'done', ok: false });
+      }
+    };`;
+}
+
+function startWorker() {
+  const blob = new Blob([workerSource()], { type: 'application/javascript' });
+  pyWorker = new Worker(URL.createObjectURL(blob));
+  pyReady = new Promise((resolve, reject) => {
+    pyWorker.addEventListener('message', function onReady(e) {
+      if (e.data.type === 'ready') { pyWorker.removeEventListener('message', onReady); resolve(); }
+    });
+    pyWorker.addEventListener('error', reject);
+  });
+}
+startWorker();  // start loading Python as soon as the page opens
+
+async function runCode() {
+  const btn = document.getElementById('runBtn');
+  const icon = document.getElementById('runIcon');
+  const spinner = document.getElementById('runSpinner');
+  const status = document.getElementById('outputStatus');
+  const scroll = document.getElementById('outputScroll');
+  const finish = () => {
+    btn.disabled = false; icon.style.display = 'block'; spinner.style.display = 'none';
+    scroll.scrollTop = scroll.scrollHeight;
+  };
+
+  btn.disabled = true;
+  icon.style.display = 'none';
+  spinner.style.display = 'block';
+  status.className = 'output-status';
+  appendOutput('', 'prompt');
+  appendOutput('$ python bigram_predictor.py', 'prompt');
+
+  status.textContent = 'loading python...';
+  try { await pyReady; } catch (e) {
+    appendOutput('Could not load Python in this browser. Check your connection and reload.', 'error');
+    status.textContent = 'error'; status.className = 'output-status err';
+    return finish();
+  }
+  status.textContent = 'running...';
+
+  const code = editor.getValue();
+  let hadError = false;
+  await new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      pyWorker.terminate();
+      appendOutput('Stopped after 10 seconds. Is there a loop that never ends?', 'error');
+      hadError = true;
+      startWorker();
+      resolve();
+    }, RUN_TIMEOUT_MS);
+    const onMsg = (e) => {
+      const m = e.data;
+      if (m.type === 'out') m.text.split('\n').forEach(l => appendOutput(l, 'success'));
+      if (m.type === 'err') { hadError = true; m.text.split('\n').forEach(l => appendOutput(l, 'error')); }
+      if (m.type === 'done') { clearTimeout(timer); pyWorker.removeEventListener('message', onMsg); resolve(); }
+    };
+    pyWorker.addEventListener('message', onMsg);
+    pyWorker.postMessage({ code });
+  });
+
+  if (hadError) { status.textContent = 'error'; status.className = 'output-status err'; }
+  else { status.textContent = 'done ✓'; status.className = 'output-status ok'; }
+  finish();
+}
+
+function appendOutput(text, type) {
+  const scroll = document.getElementById('outputScroll');
+  const div = document.createElement('div');
+  div.className = 'out-line' + (type === 'success' ? ' out-success' : type === 'error' ? ' out-error' : type === 'prompt' ? ' out-prompt' : '');
+  div.textContent = text;
+  scroll.appendChild(div);
+}
+
+function clearOutput() {
+  const scroll = document.getElementById('outputScroll');
+  scroll.innerHTML = '<div class="out-line out-info"># Output cleared</div><div class="out-line out-prompt"> </div>';
+  document.getElementById('outputStatus').textContent = 'ready';
+  document.getElementById('outputStatus').className = 'output-status';
+}
+
+function loadSolution() {
+  if (confirm('Show the solution? Try completing it yourself first!')) {
+    editor.setValue(SOLUTION_CODE);
+  }
+}
+
+function nextLesson() {
+  alert('Next lesson: Week 2 — The Data Engineer\n\nComing soon in your Ascent Scholars dashboard!');
+}
+
+// ── Resize handle ──
+const handle = document.getElementById('resizeHandle');
+handle.addEventListener('mousedown', (e) => {
+  isResizing = true;
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', () => {
+    isResizing = false;
+    document.removeEventListener('mousemove', onMouseMove);
+  });
+});
+
+function onMouseMove(e) {
+  if (!isResizing) return;
+  const workspace = document.querySelector('.editor-area');
+  const rect = workspace.getBoundingClientRect();
+  const newH = rect.bottom - e.clientY;
+  if (newH > 80 && newH < 500) {
+    outputPanel.style.height = newH + 'px';
+    if (editor) editor.layout();
+  }
+}
+
+window.addEventListener('resize', () => { if (editor) editor.layout(); });
+</script>
+</body>
+</html>
