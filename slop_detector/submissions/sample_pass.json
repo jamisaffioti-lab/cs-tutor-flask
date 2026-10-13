@@ -1,0 +1,11 @@
+{
+  "task_id": "csp-slop-01",
+  "student_id": "stu_pass",
+  "flags": [
+    {"line": 3, "claimed_type": "functional_bug", "explanation": "loop starts at index 1, skips the first score"},
+    {"line": 6, "claimed_type": "edge_case", "explanation": "divides by len(passing) which is 0 when nobody passes"},
+    {"line": 7, "claimed_type": "hallucination", "explanation": "round() has no third argument and ROUND_HALF_UP is undefined"}
+  ],
+  "edited_code": "def class_average(scores):\n    passing = [s for s in scores if s >= 60 and s <= 100]\n    if not passing:\n        return 0\n    return round(sum(passing) / len(passing), 1)\n",
+  "submitted_at": "2026-09-21T18:00:00Z"
+}

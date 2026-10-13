@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ascent Scholars — Working with AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0c1826; --panel: #13253a; --panel-2: #0f1f31; --line: #21374f;
+    --ink: #eaf1f8; --muted: #8ba6bf; --green: #4cc38a; --green-dim: #2f7a58;
+    --gold: #e0aa4e; --bad: #e5695f; --shadow: 0 8px 30px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: radial-gradient(1200px 600px at 80% -10%, #16304a 0%, var(--navy) 55%);
+    color: var(--ink); font-family: "DM Mono", ui-monospace, monospace; -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .syne { font-family: "Syne", system-ui, sans-serif; letter-spacing: -0.01em; }
+  header { padding: 20px 26px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .peak { width: 30px; height: 30px; }
+  .peak path { fill: none; stroke: var(--green); stroke-width: 6; stroke-linejoin: round; }
+  .wordmark { font-family: "Syne"; font-weight: 800; font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--green); }
+  .titles { margin-left: 4px; }
+  .titles h1 { margin: 0; font-size: 20px; font-weight: 700; }
+  .titles .tag { font-family: "Cormorant Garamond"; font-style: italic; font-size: 17px; color: var(--gold); margin-top: 1px; }
+  .wip { margin-left: auto; font-size: 11px; color: var(--muted); border: 1px solid var(--line); padding: 4px 9px; border-radius: 999px; }
+  main { display: grid; grid-template-columns: 1fr 400px; gap: 20px; padding: 22px 26px; max-width: 1280px; }
+  @media (max-width: 940px) { main { grid-template-columns: 1fr; } }
+  .card { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+  .card > h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin: 0; padding: 14px 16px; border-bottom: 1px solid var(--line); font-weight: 700; }
+  .card .body { padding: 16px; }
+  .steps { display: flex; gap: 14px; flex-wrap: wrap; margin: 0 0 14px; padding: 0; list-style: none; }
+  .steps li { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+  .steps b { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--green-dim); color: var(--ink); font-family: "Syne"; font-size: 11px; }
+  #prompt { color: var(--ink); font-size: 14.5px; margin: 0 0 4px; }
+  .hint { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  #editorWrap { border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; overflow: hidden; }
+  #editor { height: 380px; }
+  #fallbackEditor { display: none; width: 100%; height: 380px; border: 0; background: var(--navy); color: var(--ink);
+    font-family: "DM Mono", monospace; font-size: 14px; line-height: 1.55; padding: 14px 16px; resize: none; }
+  .flag { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 10px; background: rgba(0,0,0,.15); }
+  .flag .top { display: grid; grid-template-columns: 78px 1fr; gap: 8px; margin-bottom: 8px; }
+  label.mini { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: block; margin-bottom: 3px; }
+  input, select, textarea { background: var(--navy); border: 1px solid var(--line); color: var(--ink); border-radius: 7px; padding: 7px 9px; font-family: "DM Mono", monospace; font-size: 13px; width: 100%; }
+  textarea.f-why { resize: vertical; min-height: 40px; }
+  .flag .row { display: flex; justify-content: flex-end; margin-top: 6px; }
+  .del { background: transparent; color: var(--bad); border: 1px solid var(--line); padding: 5px 10px; border-radius: 7px; font-family: inherit; font-size: 12px; cursor: pointer; }
+  button.add { background: transparent; color: var(--green); border: 1px dashed var(--green-dim); border-radius: 8px; padding: 9px; width: 100%; font-family: "Syne"; font-weight: 600; cursor: pointer; }
+  button.primary { background: var(--green); color: #06231a; border: 0; border-radius: 9px; padding: 12px 16px; font-family: "Syne"; font-weight: 700; font-size: 15px; cursor: pointer; width: 100%; }
+  button.primary:hover { filter: brightness(1.06); }
+  #status { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 8px; min-height: 16px; }
+  .banner { border-radius: 11px; padding: 14px 16px; margin-bottom: 14px; }
+  .banner.pass { background: rgba(76,195,138,.14); border: 1px solid var(--green-dim); }
+  .banner.fail { background: rgba(229,105,95,.12); border: 1px solid #6d3733; }
+  .banner .v { font-family: "Syne"; font-weight: 800; font-size: 17px; }
+  .banner.pass .v { color: var(--green); } .banner.fail .v { color: var(--bad); }
+  .banner .sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .dim { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .dim:last-child { border-bottom: 0; }
+  .dim .name { font-size: 13px; } .dim .name small { color: var(--muted); display: block; font-size: 11px; }
+  .pips { display: flex; gap: 4px; }
+  .pip { width: 22px; height: 7px; border-radius: 3px; background: var(--line); }
+  .pip.on { background: var(--green); } .pip.on.low { background: var(--bad); }
+  .evi { font-size: 11.5px; color: var(--muted); margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg class="peak" viewBox="0 0 64 64" aria-hidden="true"><path d="M6 52 L26 16 L36 34 L44 24 L58 52 Z"/></svg>
+    <div><div class="wordmark">Ascent Scholars</div></div>
+  </div>
+  <div class="titles">
+    <h1>Working with AI</h1>
+    <div class="tag">Prove you can build with AI — and catch its mistakes.</div>
+  </div>
+  <nav style="margin-left:auto;display:flex;gap:14px;align-items:center;font-size:13px">
+    <a href="/check?task=csp-slop-01" style="color:inherit">Task 1</a>
+    <a href="/check?task=csp-slop-02" style="color:inherit">Task 2</a>
+    <a href="/dashboard" style="color:inherit">← Dashboard</a>
+  </nav>
+</header>
+
+<main>
+  <section class="card" style="align-self:start">
+    <h2>The challenge</h2>
+    <div class="body">
+      <ol class="steps">
+        <li><b>1</b> Spot what's wrong</li>
+        <li><b>2</b> Fix the code</li>
+        <li><b>3</b> Run &amp; score</li>
+      </ol>
+      <p id="prompt">Loading…</p>
+      <p class="hint">An AI wrote the code below. Some of it is wrong — a logic slip, an unhandled case,
+        a made-up function, or code that runs fine but solves the <em>wrong</em> problem. Some of it is
+        perfectly correct. Flag the real issues on the right, fix them in the editor, and don't "fix"
+        what isn't broken.</p>
+    </div>
+    <div id="editorWrap">
+      <div id="editor"></div>
+      <textarea id="fallbackEditor" spellcheck="false"></textarea>
+    </div>
+  </section>
+
+  <aside style="display:flex; flex-direction:column; gap:20px">
+    <section class="card">
+      <h2>Your flags</h2>
+      <div class="body">
+        <div id="flags"></div>
+        <button class="add" id="addFlag">+ Add a flag</button>
+      </div>
+    </section>
+    <section class="card">
+      <div class="body">
+        <button class="primary" id="submit">Run &amp; score my work</button>
+        <div id="status"></div>
+      </div>
+    </section>
+    <section class="card" id="scoreCard" style="display:none">
+      <h2>Your result</h2>
+      <div class="body">
+        <div class="banner" id="banner"><span class="v" id="verdict"></span><div class="sub" id="verdictSub"></div></div>
+        <div id="score"></div>
+        <div class="evi" id="evidence"></div>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.js"></script>
+<script>
+const TASK_ID = new URLSearchParams(location.search).get("task") || "csp-slop-01";
+let editor = null, task = null;
+
+const TYPE_LABELS = {
+  functional_bug: "Logic bug",
+  edge_case: "Edge case not handled",
+  hallucination: "Hallucinated / made-up code",
+  intent_gap: "Solves the wrong problem",
+};
+const DIM_LABELS = {
+  detection: ["Detection", "found the real issues"],
+  diagnosis: ["Diagnosis", "named what kind of issue"],
+  correction: ["Correction", "your fix passes the tests"],
+  verification: ["Verification", "the broken cases now work"],
+  calibration: ["Judgment", "left the correct code alone"],
+};
+
+async function loadTask() {
+  task = await (await fetch(`/check/api/task/${encodeURIComponent(TASK_ID)}`)).json();
+  document.getElementById("prompt").textContent = task.prompt;
+  addFlagRow();          // always show one flag row, independent of the editor
+  initEditor();          // Monaco, with a plain-textarea fallback if the CDN is unreachable
+}
+
+function initEditor() {
+  const fb = document.getElementById("fallbackEditor");
+  fb.value = task.buggy_code;
+  const useFallback = () => {
+    if (editor) return;
+    document.getElementById("editor").style.display = "none";
+    fb.style.display = "block";
+  };
+  if (!window.require) { useFallback(); return; }
+  try {
+    require.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs" } });
+    require(["vs/editor/editor.main"], () => {
+      try {
+        monaco.editor.defineTheme("ascent", { base: "vs-dark", inherit: true, rules: [], colors: { "editor.background": "#0c1826" } });
+        editor = monaco.editor.create(document.getElementById("editor"), {
+          value: task.buggy_code, language: task.language, theme: "ascent",
+          minimap: { enabled: false }, fontSize: 14, fontFamily: "DM Mono, monospace",
+          lineNumbers: "on", automaticLayout: true, scrollBeyondLastLine: false,
+        });
+      } catch (e) { useFallback(); }
+    });
+    setTimeout(() => { if (!editor) useFallback(); }, 5000);
+  } catch (e) { useFallback(); }
+}
+
+function getCode() {
+  return editor ? editor.getValue() : document.getElementById("fallbackEditor").value;
+}
+
+function accusationTypes() {
+  return (task.defect_types || []).filter(t => t in TYPE_LABELS);
+}
+
+function addFlagRow() {
+  const wrap = document.getElementById("flags");
+  const row = document.createElement("div");
+  row.className = "flag";
+  const opts = accusationTypes().map(t => `<option value="${t}">${TYPE_LABELS[t]}</option>`).join("");
+  row.innerHTML = `
+    <div class="top">
+      <div><label class="mini">Line</label><input type="number" min="1" class="f-line" placeholder="#"/></div>
+      <div><label class="mini">What's wrong</label><select class="f-type">${opts}</select></div>
+    </div>
+    <label class="mini">Why (explain your reasoning)</label>
+    <textarea class="f-why" placeholder="e.g. this skips the first item / crashes when the list is empty"></textarea>
+    <div class="row"><button class="del">Remove</button></div>`;
+  row.querySelector(".del").onclick = () => row.remove();
+  wrap.appendChild(row);
+}
+
+function collectFlags() {
+  return [...document.querySelectorAll(".flag")].map(r => ({
+    line: parseInt(r.querySelector(".f-line").value, 10),
+    claimed_type: r.querySelector(".f-type").value,
+    explanation: r.querySelector(".f-why").value,
+  })).filter(f => Number.isInteger(f.line));
+}
+
+async function submit() {
+  const status = document.getElementById("status");
+  status.textContent = "running your code and scoring…";
+  const submission = {
+    task_id: TASK_ID, student_id: "local",
+    flags: collectFlags(), edited_code: getCode(),
+    submitted_at: new Date().toISOString(),
+  };
+  try {
+    const res = await (await fetch("/check/api/submit", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(submission),
+    })).json();
+    render(res); status.textContent = "";
+  } catch (e) { status.textContent = "Couldn't reach the scorer — is the server running?"; }
+}
+
+function render(res) {
+  document.getElementById("scoreCard").style.display = "block";
+  const banner = document.getElementById("banner");
+  banner.className = "banner " + (res.passed ? "pass" : "fail");
+  document.getElementById("verdict").textContent = res.passed ? "Passed ✦" : "Not yet";
+  document.getElementById("verdictSub").textContent = res.passed
+    ? "You cleared all five dimensions — you'd earn the credential on this task."
+    : "You need level 3+ on all five. See where to sharpen below.";
+  document.getElementById("score").innerHTML = Object.entries(res.dimensions).map(([k, v]) => {
+    const [name, desc] = DIM_LABELS[k] || [k, ""];
+    const pips = [1, 2, 3, 4].map(n => `<span class="pip ${n <= v ? "on" : ""} ${v < 3 ? "low" : ""}"></span>`).join("");
+    return `<div class="dim"><div class="name">${name}<small>${desc}</small></div>
+      <div class="pips" title="Level ${v} of 4">${pips}</div></div>`;
+  }).join("");
+  const ev = res.evidence;
+  document.getElementById("evidence").textContent =
+    `Tests passed ${ev.tests_passed} · flagged the correct code: ${ev.trap_flagged ? "yes (careful!)" : "no ✓"} · regressions: ${ev.regressions}`;
+}
+
+document.getElementById("addFlag").onclick = addFlagRow;
+document.getElementById("submit").onclick = submit;
+loadTask();
+</script>
+</body>
+</html>

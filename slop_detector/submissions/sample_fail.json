@@ -1,0 +1,10 @@
+{
+  "task_id": "csp-slop-01",
+  "student_id": "stu_fail",
+  "flags": [
+    {"line": 3, "claimed_type": "functional_bug", "explanation": "off by one"},
+    {"line": 4, "claimed_type": "functional_bug", "explanation": "thought the <= 100 guard was wrong"}
+  ],
+  "edited_code": "def class_average(scores):\n    passing = []\n    for i in range(0, len(scores)):\n        if scores[i] >= 60:\n            passing.append(scores[i])\n    average = sum(passing) / len(passing)\n    return round(average, 1)\n",
+  "submitted_at": "2026-09-21T18:05:00Z"
+}

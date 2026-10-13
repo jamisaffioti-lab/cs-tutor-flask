@@ -1,0 +1,23 @@
+{
+  "task_id": "csp-slop-02",
+  "competency": "C2",
+  "language": "python",
+  "entrypoint": "warmer_avg",
+  "prompt": "Given a list of integer daily temperatures, return the average of the temperatures on days that were warmer than the day BEFORE, rounded to 1 decimal. The first day never qualifies. If no day qualifies, return 0.",
+  "buggy_code": "def warmer_avg(temps):\n    warmer = []\n    for i in range(1, len(temps)):\n        if temps[i] > temps[0]:\n            warmer.append(temps[i])\n    return round(sum(warmer) / len(warmer), 1)\n",
+  "defects": [
+    {"id": "d1", "type": "intent_gap", "locator": "temps[i] > temps[0]", "is_trap": false},
+    {"id": "d2", "type": "edge_case", "locator": "sum(warmer) / len(warmer)", "is_trap": false},
+    {"id": "d3", "type": "trap_correct", "locator": "range(1, len(temps))", "is_trap": true, "signature": "range(1"}
+  ],
+  "hidden_tests": [
+    {"input": [[50, 60, 55, 70]], "expected": 65.0, "catches": ["d1"]},
+    {"input": [[40, 50, 45, 48]], "expected": 49.0, "catches": ["d1"]},
+    {"input": [[30, 40, 50, 60]], "expected": 50.0, "catches": []},
+    {"input": [[80, 70, 60]], "expected": 0, "catches": ["d2"]},
+    {"input": [[]], "expected": 0, "catches": ["d2"]},
+    {"input": [[45]], "expected": 0, "catches": ["d2"]}
+  ],
+  "reference_solution": "def warmer_avg(temps):\n    warmer = [temps[i] for i in range(1, len(temps)) if temps[i] > temps[i-1]]\n    if not warmer:\n        return 0\n    return round(sum(warmer) / len(warmer), 1)\n",
+  "rubric_id": "c2-slop-detector-v1"
+}

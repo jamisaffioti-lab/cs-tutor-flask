@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from flask_cors import CORS
 import anthropic
 import secrets
@@ -8,6 +8,8 @@ from datetime import datetime
 import sqlite3
 from functools import wraps
 import json
+import urllib.parse
+import urllib.request
 import time
 from anthropic import Anthropic
 
@@ -35,15 +37,21 @@ if not api_key:
     raise RuntimeError('ANTHROPIC_API_KEY environment variable not set')
 client = anthropic.Anthropic(api_key=api_key)
 
-def chat_with_retry(messages, model="claude-sonnet-4-20250514", max_tokens=1000, max_retries=3):
-    """Call Anthropic API with automatic retry on overload"""
+TUTOR_MODEL = os.environ.get('TUTOR_MODEL', 'claude-sonnet-5-5')
+
+
+def chat_with_retry(messages, system=None, model=None, max_tokens=1500, max_retries=3):
+    """Call the Claude API with automatic retry on overload.
+
+    `system` carries the subject's tutor instructions. Before Oct 2026 these
+    were never sent, so the tutor answered as plain Claude.
+    """
+    kwargs = {'model': model or TUTOR_MODEL, 'max_tokens': max_tokens, 'messages': messages}
+    if system:
+        kwargs['system'] = system
     for attempt in range(max_retries):
         try:
-            response = client.messages.create(  # ← FIXED: was calling itself
-                model=model,
-                max_tokens=max_tokens,
-                messages=messages
-            )
+            response = client.messages.create(**kwargs)
             return response
         except Exception as e:
             error_msg = str(e).lower()
@@ -56,8 +64,12 @@ def chat_with_retry(messages, model="claude-sonnet-4-20250514", max_tokens=1000,
                 raise e
 
 # Initialize database
+# Set DB_PATH to a Render persistent disk (e.g. /var/data/tutorbot.db) so
+# saved conversations survive redeploys; the default is wiped on each deploy.
+DB_PATH = os.environ.get('DB_PATH', 'tutorbot.db')
+
 def init_db():
-    conn = sqlite3.connect('tutorbot.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     
     # Users table
@@ -88,7 +100,7 @@ init_db()
 
 # Database helper functions
 def get_db():
-    conn = sqlite3.connect('tutorbot.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -289,6 +301,36 @@ Your role is to:
     }
 }
 
+
+def _google_get(url, access_token=None):
+    """GET a Google OAuth endpoint and return parsed JSON (stdlib only)."""
+    req = urllib.request.Request(url)
+    if access_token:
+        req.add_header('Authorization', 'Bearer ' + access_token)
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode('utf-8'))
+
+
+def verify_google_access_token(access_token):
+    """Check with Google that the token is real and was issued to this app.
+
+    Returns (user_info, None) on success or (None, error_message).
+    The browser only passes the token; identity always comes from Google,
+    never from fields the browser could fake.
+    """
+    if not access_token:
+        return None, 'Missing token'
+    try:
+        info = _google_get('https://oauth2.googleapis.com/tokeninfo?access_token='
+                           + urllib.parse.quote(access_token))
+        if GOOGLE_CLIENT_ID and info.get('aud') != GOOGLE_CLIENT_ID:
+            return None, 'Token was not issued to this app'
+        user = _google_get('https://www.googleapis.com/oauth2/v3/userinfo', access_token)
+        return user, None
+    except Exception as e:  # invalid/expired token or network error
+        print(f'Google token check failed: {e}')
+        return None, 'Could not verify Google sign-in'
+
 # Authentication routes
 @app.route('/logout')
 def logout():
@@ -298,15 +340,18 @@ def logout():
 @app.route('/auth/google/callback', methods=['POST'])
 def google_callback():
     """Handle Google OAuth callback"""
-    data = request.json
-    
-    google_id = data.get('google_id')
-    email = data.get('email')
-    name = data.get('name')
-    picture = data.get('picture')
-    
-    if not google_id or not email:
-        return jsonify({'success': False, 'error': 'Missing credentials'})
+    data = request.json or {}
+    user_info, error = verify_google_access_token(data.get('access_token'))
+    if error:
+        return jsonify({'success': False, 'error': 'auth_failed', 'message': error}), 401
+
+    google_id = user_info.get('sub')
+    email = (user_info.get('email') or '').lower()
+    name = user_info.get('name')
+    picture = user_info.get('picture')
+
+    if not google_id or not email or not user_info.get('email_verified', False):
+        return jsonify({'success': False, 'error': 'Missing credentials'}), 401
     
     # Check email whitelist
     if email not in ALLOWED_EMAILS:
@@ -463,7 +508,7 @@ def api_chat():
         })
         
         # Get response from Claude with retry
-        response = chat_with_retry(messages)
+        response = chat_with_retry(messages, system=SUBJECTS[subject]['system_prompt'])
         
         # Extract assistant's response
         assistant_message = response.content[0].text
@@ -652,7 +697,7 @@ def api_chat_file():
         messages.append(api_message)
         
         # Get response from Claude with retry
-        response = chat_with_retry(messages)
+        response = chat_with_retry(messages, system=SUBJECTS[subject]['system_prompt'])
         
         # Extract response
         assistant_message = response.content[0].text
@@ -747,7 +792,7 @@ def api_practice():
         }]
         
         # Get response with retry
-        response = chat_with_retry(practice_messages)
+        response = chat_with_retry(practice_messages, system=SUBJECTS[subject]['system_prompt'])
         
         # Extract response text
         response_text = ""
@@ -950,12 +995,65 @@ def api_clear():
     
     return jsonify({'success': True})
 
-if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+# ── Practice: the AI Architect lab (Monaco editor + Python in the browser) ──
+@app.route('/lab')
+@login_required
+def lab():
+    return send_from_directory(os.path.join(app.root_path, 'labs'), 'ai-architect-week1.html')
+
+
+# ── Check the AI: slop-detector tasks (AP CSP, competency C2) ──
+from slop_detector.harness.loader import load_task as load_slop_task  # noqa: E402
+from slop_detector.harness.scorer import score as score_slop  # noqa: E402
+
+SLOP_TASKS = {'csp-slop-01', 'csp-slop-02'}
+SLOP_DEFECT_TYPES = ['functional_bug', 'edge_case', 'hallucination', 'intent_gap', 'trap_correct']
+
+
+@app.route('/check')
+@login_required
+def check():
+    return send_from_directory(os.path.join(app.root_path, 'slop_detector', 'web'), 'index.html')
+
+
+@app.route('/check/api/task/<task_id>')
+@login_required
+def check_task(task_id):
+    if task_id not in SLOP_TASKS:
+        return jsonify({'error': 'Unknown task'}), 404
+    task = load_slop_task(task_id)
+    # Student-safe view only: the answer key never leaves the server.
+    return jsonify({
+        'task_id': task['task_id'], 'prompt': task['prompt'], 'language': task['language'],
+        'entrypoint': task['entrypoint'], 'buggy_code': task['buggy_code'],
+        'defect_types': SLOP_DEFECT_TYPES,
+    })
+
+
+@app.route('/check/api/submit', methods=['POST'])
+@login_required
+def check_submit():
+    submission = request.get_json(silent=True) or {}
+    if submission.get('task_id') not in SLOP_TASKS:
+        return jsonify({'error': 'Unknown task'}), 404
+    submission['student_id'] = str(session['user_id'])  # never trust the browser for identity
+    result = score_slop(load_slop_task(submission['task_id']), submission)
+    return jsonify({
+        'task_id': result.task_id,
+        'student_id': result.student_id,
+        'dimensions': result.dimensions,
+        'passed': result.passed,
+        'evidence': {k: result.evidence[k] for k in
+                     ('tests_passed', 'trap_flagged', 'regressions', 'flags_matched')},
+    })
+
 @app.route('/auth/google/redirect')
 def google_redirect():
     """Handle Google OAuth implicit flow redirect"""
     return render_template('oauth_redirect.html')
 
+
+if __name__ == '__main__':
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
