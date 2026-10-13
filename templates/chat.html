@@ -16,14 +16,14 @@
   .chat-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 0; display: flex; flex-direction: column; gap: 18px; }
   .message { display: flex; }
   .message.user { justify-content: flex-end; }
-  .message-content { max-width: 78%; padding: 14px 18px; border-radius: var(--radius); line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .message.assistant .message-content { background: var(--surface); border: var(--rule); border-left: 3px solid var(--accent-fill); }
-  .message.user .message-content { background: var(--stone); color: var(--cream); }
+  .message-content { max-width: 78%; padding: 14px 18px; border-radius: 14px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .message.assistant .message-content { border-top-left-radius: 4px; }
+  .message.user .message-content { background: color-mix(in srgb, var(--stone) 88%, transparent); color: var(--cream); border-top-right-radius: 4px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 8px 24px color-mix(in srgb, var(--stone) 14%, transparent); }
   .message-content code { font-family: var(--font-body); font-size: 12px; background: var(--bg); border: var(--rule); padding: 1px 5px; border-radius: var(--radius); }
   .message.user .message-content code { background: transparent; color: inherit; }
   .message-content pre { white-space: pre; margin: 10px 0; border: var(--rule); border-radius: var(--radius); overflow-x: auto; }
   .message-content pre code.hljs { display: block; padding: 14px 16px; border: none; font-size: 12px; line-height: 1.6; background: var(--cream); }
-  .message-content.special { max-width: 88%; border-left-color: var(--ridge-fill); }
+  .message-content.special { max-width: 88%; border-color: var(--ridge-fill); }
   .special-label { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
   .attach-wrap { white-space: normal; margin-bottom: 10px; }
   .attach-img { max-width: 100%; border-radius: var(--radius); margin-bottom: 8px; display: block; }
@@ -58,7 +58,7 @@
   }
 </style>
 </head>
-<body>
+<body class="mountain">
 {% set back = ('/dashboard', 'Dashboard') %}
 {% include 'partials/bar.html' %}
 
@@ -74,7 +74,7 @@
   <div class="chat-messages" id="chatMessages" aria-live="polite">
     {% if not initial_messages %}
     <div class="message assistant">
-      <div class="message-content">Hi! I'm your {{ subject_info.name }} tutor. Ask me anything, and I'll help you work it out step by step.</div>
+      <div class="message-content glass">Hi! I'm your {{ subject_info.name }} tutor. Ask me anything, and I'll help you work it out step by step.</div>
     </div>
     {% endif %}
   </div>
@@ -252,7 +252,7 @@
             messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
 
             const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
+            contentDiv.className = isUser ? 'message-content' : 'message-content glass';
 
             // Handle attachment display
             if (attachment) {
@@ -478,8 +478,7 @@
                     practiceDiv.className = 'message assistant';
 
                     const contentDiv = document.createElement('div');
-                    contentDiv.className = 'message-content';
-                    contentDiv.classList.add('special');
+                    contentDiv.className = 'message-content glass special';
 
                     // Format the response with code highlighting
                     contentDiv.innerHTML = `<div class="special-label">Practice resources${data.topic ? ' · ' + escapeHtml(data.topic) : ''}</div>` +
@@ -567,7 +566,7 @@
                     const messagesDiv = document.getElementById('chatMessages');
                     const summaryDiv = document.createElement('div');
                     summaryDiv.className = 'message assistant';
-                    summaryDiv.innerHTML = `<div class="message-content special"><div class="special-label">Session summary</div><div>${formatCodeBlocks(data.summary)}</div></div>`;
+                    summaryDiv.innerHTML = `<div class="message-content glass special"><div class="special-label">Session summary</div><div>${formatCodeBlocks(data.summary)}</div></div>`;
                     messagesDiv.appendChild(summaryDiv);
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 } else {
@@ -604,7 +603,7 @@
                     const messagesDiv = document.getElementById('chatMessages');
                     messagesDiv.innerHTML = `
                         <div class="message assistant">
-                            <div class="message-content">Hi! I'm your {{ subject_info.name }} tutor. I'm here to help you learn and understand the concepts. Ask me anything, and I'll guide you through it step by step!</div>
+                            <div class="message-content glass">Hi! I'm your {{ subject_info.name }} tutor. I'm here to help you learn and understand the concepts. Ask me anything, and I'll guide you through it step by step!</div>
                         </div>
                     `;
                     // Reset conversation ID

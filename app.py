@@ -119,7 +119,7 @@ def login_required(f):
 SUBJECTS = {
     'ap_cs_a': {
         'name': 'AP Computer Science A',
-        'icon': 'cupojoe.png',
+        'icon': 'cupojoe-ink.png',
         'examples': [
             "Can you help me understand recursion?",
             "What's the difference between ArrayList and Array?",
@@ -154,7 +154,7 @@ This page has past FRQs along with sample student responses, scoring guidelines,
     },
     'ap_cs_principles': {
         'name': 'AP Computer Science Principles',
-        'icon': 'pysnake.png',
+        'icon': 'ap-csp.svg',
         'examples': [
             "Explain how the internet works",
             "What is an algorithm?",

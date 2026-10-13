@@ -1,0 +1,7 @@
+<!-- Placeholder icon for "Check the AI's code" until Jami's Canva version. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#1a1814" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="6" y="9" width="40" height="32" rx="3" fill="#fff"/>
+  <path d="M15 20l-5 5 5 5M27 20l5 5-5 5M23 18l-4 14"/>
+  <circle cx="42" cy="40" r="10" fill="#fff"/>
+  <path d="M38 40l3 3 5-6M49 47l8 8"/>
+</svg>

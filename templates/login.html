@@ -6,11 +6,12 @@
 <style>
   body { display: flex; flex-direction: column; }
   .page { flex: 1; display: grid; grid-template-columns: 1.15fr 1fr; min-height: calc(100vh - var(--bar-h)); }
-  .intro { padding: 72px 56px; border-right: var(--rule); display: flex; flex-direction: column; justify-content: center; }
+  .intro { padding: 72px 56px; display: flex; flex-direction: column; justify-content: center; }
   .intro .eyebrow { margin-bottom: 20px; }
   .intro .display { font-size: clamp(40px, 6vw, 72px); margin-bottom: 22px; }
   .intro .lede { max-width: 520px; }
-  .panel { padding: 72px 56px; display: flex; flex-direction: column; justify-content: center; background: var(--surface); }
+  .panel { padding: 56px 48px; display: flex; flex-direction: column; justify-content: center; }
+  .panel-inner { padding: 40px 36px; max-width: 520px; width: 100%; }
   .panel h2 { font-size: 30px; margin-bottom: 8px; }
   .panel p.sub { color: var(--text-secondary); margin-bottom: 28px; }
   .features { list-style: none; margin-bottom: 32px; border-top: var(--rule); }
@@ -23,22 +24,24 @@
   .error strong { font-family: var(--font-label); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; display: block; margin-bottom: 4px; }
   @media (max-width: 860px) {
     .page { grid-template-columns: 1fr; }
-    .intro { border-right: none; border-bottom: var(--rule); padding: 48px 16px 40px; }
-    .panel { padding: 40px 16px 56px; }
+    .intro { padding: 48px 16px 32px; }
+    .panel { padding: 8px 16px 56px; }
+    .panel-inner { padding: 28px 22px; }
   }
 </style>
 </head>
-<body>
+<body class="mountain">
 {% include 'partials/bar.html' %}
 
 <div class="page">
-  <section class="intro texture">
+  <section class="intro">
     <div class="eyebrow">Ascent Scholars · Noros Solutions</div>
     <h1 class="display">Learn computer science<br><em>by doing it.</em></h1>
     <p class="lede">A personal tutor for AP CS, hands-on Python labs, and practice catching an AI's mistakes.</p>
   </section>
 
   <section class="panel">
+   <div class="panel-inner glass">
     <h2 class="display">Sign in</h2>
     <p class="sub">Ascent Scholars is in private beta.</p>
 
@@ -64,6 +67,7 @@
       Continue with Google
     </button>
     <p class="note">We use your Google account only to sign you in. You'll go to Google's own page to choose an account.</p>
+   </div>
   </section>
 </div>
 
