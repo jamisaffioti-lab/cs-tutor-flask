@@ -16,19 +16,18 @@
   .section-head h2 { font-size: clamp(26px, 3.4vw, 36px); }
   .section-note { color: var(--text-muted); max-width: 360px; text-align: right; }
 
-  .grid { display: grid; gap: 2px; background: var(--grid-gap); border: var(--rule); }
+  .grid { display: grid; gap: 16px; }
   .grid-3 { grid-template-columns: repeat(3, 1fr); }
   .grid-2 { grid-template-columns: repeat(2, 1fr); }
-  .grid .card { border: none; border-radius: 0; padding: 22px; display: flex; gap: 16px; align-items: flex-start; min-height: 112px; }
-  .grid a.card:hover { transform: none; background: var(--bg); box-shadow: inset 0 -3px 0 var(--accent-fill); }
+  .grid .glass { padding: 22px; display: flex; gap: 16px; align-items: flex-start; min-height: 112px; }
   .card-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; line-height: 1.15; margin-bottom: 4px; }
   .card-sub { color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
   .card-tag { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 6px; }
 
-  .convos { border: var(--rule); background: var(--surface); }
+  .convos { overflow: hidden; }
   .convo { display: grid; grid-template-columns: 1fr auto auto; gap: 20px; align-items: center; padding: 16px 22px; border-bottom: var(--rule); text-decoration: none; color: inherit; }
   .convo:last-child { border-bottom: none; }
-  .convo:hover { background: var(--bg); }
+  .convo:hover { background: color-mix(in srgb, var(--surface) 60%, transparent); }
   .convo-title { font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .convo-subject { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap; }
   .convo-date { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
@@ -62,7 +61,7 @@
       </div>
     </div>
     <div class="grid grid-2">
-      <a class="card" href="/lab">
+      <a class="glass" href="/lab">
         <div class="icon-tile"><img src="{{ url_for('static', filename='images/pysnake.png') }}" alt=""></div>
         <div>
           <span class="card-tag">The AI Architect · 4 weeks</span>
@@ -70,8 +69,8 @@
           <div class="card-sub">Build a prediction model from scratch, one lesson at a time. Your code runs right in the browser.</div>
         </div>
       </a>
-      <a class="card" href="/check">
-        <div class="icon-tile"><img src="{{ url_for('static', filename='images/bullseye.png') }}" alt=""></div>
+      <a class="glass" href="/check">
+        <div class="icon-tile"><img src="{{ url_for('static', filename='images/check-ai.svg') }}" alt=""></div>
         <div>
           <span class="card-tag">AP CSP · 2 tasks</span>
           <div class="card-title">Check the AI's code</div>
@@ -91,7 +90,7 @@
     </div>
     <div class="grid grid-3">
       {% for key, subject in subjects.items() %}
-      <a class="card" href="/chat/{{ key }}">
+      <a class="glass" href="/chat/{{ key }}">
         <div class="icon-tile"><img src="{{ url_for('static', filename='images/' + subject.icon) }}" alt=""></div>
         <div>
           <div class="card-title">{{ subject.name }}</div>
@@ -109,7 +108,7 @@
         <h2 class="display">Your conversations</h2>
       </div>
     </div>
-    <div class="convos">
+    <div class="convos glass">
       {% for conv in conversations %}
       <a class="convo" href="/chat/{{ conv.subject }}?conversation_id={{ conv.id }}">
         <span class="convo-title">{{ conv.title or 'Untitled conversation' }}</span>
