@@ -1,7 +1,23 @@
-<!-- Placeholder icon for AP Computer Science Principles until Jami's Canva version. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#2e2b26" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-  <circle cx="32" cy="32" r="22" fill="#fff"/>
+<!-- Placeholder icon for AP Computer Science Principles, hand-drawn look, until Jami's Canva version. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <defs>
+    <filter id="rough1" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="3" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.2"/>
+    </filter>
+    <filter id="rough2" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="2" seed="11" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.8"/>
+    </filter>
+  </defs>
+  <!-- main line, slightly wobbly -->
+  <g stroke="#2e2b26" stroke-width="1.7" filter="url(#rough1)"><circle cx="32" cy="32" r="22" fill="#fff"/>
   <path d="M10 32h44M32 10c7 6 10 14 10 22s-3 16-10 22M32 10c-7 6-10 14-10 22s3 16 10 22"/>
   <circle cx="12" cy="14" r="4" fill="#fff"/><circle cx="54" cy="50" r="4" fill="#fff"/>
-  <path d="M15 17l5 5M44 44l6 3"/>
+  <path d="M15 17l5 5M44 44l6 3"/></g>
+  <!-- a second, lighter pass offset a hair, like a pen going over the line twice -->
+  <g stroke="#2e2b26" stroke-width="0.7" opacity="0.5" filter="url(#rough2)" transform="translate(0.5 -0.4)"><circle cx="32" cy="32" r="22" />
+  <path d="M10 32h44M32 10c7 6 10 14 10 22s-3 16-10 22M32 10c-7 6-10 14-10 22s3 16 10 22"/>
+  <circle cx="12" cy="14" r="4" /><circle cx="54" cy="50" r="4" />
+  <path d="M15 17l5 5M44 44l6 3"/></g>
 </svg>
