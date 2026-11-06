@@ -72,11 +72,21 @@
       <a class="glass" href="/check">
         <div class="icon-tile"><img src="{{ url_for('static', filename='images/check-ai.svg') }}" alt=""></div>
         <div>
-          <span class="card-tag">AP CSP · 2 tasks</span>
+          <span class="card-tag">AP CSP · 5 tasks</span>
           <div class="card-title">Check the AI's code</div>
           <div class="card-sub">An AI wrote some code. Find what's wrong, fix it, and leave what's right alone.</div>
         </div>
       </a>
+      {% if is_teacher %}
+      <a class="glass" href="/teacher">
+        <div class="icon-tile"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt=""></div>
+        <div>
+          <span class="card-tag">Teacher</span>
+          <div class="card-title">Class results</div>
+          <div class="card-sub">Each student's scores, pass/fail, and the evidence behind every attempt.</div>
+        </div>
+      </a>
+      {% endif %}
     </div>
   </section>
 

@@ -1,0 +1,12 @@
+{
+  "task_id": "csp-slop-04",
+  "flags": [
+    {
+      "line": 3,
+      "claimed_type": "hallucination",
+      "explanation": "[::-1] is not real"
+    }
+  ],
+  "edited_code": "def is_palindrome(word):\n    return word == ''.join(reversed(word))\n",
+  "student_id": "demo"
+}

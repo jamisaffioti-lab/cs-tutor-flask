@@ -4,7 +4,7 @@ import anthropic
 import secrets
 import base64
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import sqlite3
 from functools import wraps
 import json
@@ -18,11 +18,27 @@ CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(16))
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Email whitelist for private beta
-ALLOWED_EMAILS = {
-    'jami.saffioti@gmail.com',
-    'nova.noros@gmail.com',
-}
+# Who can sign in, and who is a teacher. Set these on Render as comma-separated
+# lists (no code change needed to add a demo account):
+#   ALLOWED_EMAILS=student1@gmail.com,student2@gmail.com
+#   TEACHER_EMAILS=jami.saffioti@gmail.com      (teachers can always sign in)
+def _canon_email(email):
+    """Lowercase, and ignore dots in Gmail usernames (Gmail does too)."""
+    email = (email or '').strip().lower()
+    user, _, domain = email.partition('@')
+    if domain in ('gmail.com', 'googlemail.com'):
+        user = user.split('+')[0].replace('.', '')
+        domain = 'gmail.com'
+    return f'{user}@{domain}' if domain else user
+
+
+def _email_set(env_name, default):
+    raw = os.environ.get(env_name) or default
+    return {_canon_email(e) for e in raw.split(',') if e.strip()}
+
+
+TEACHER_EMAILS = _email_set('TEACHER_EMAILS', 'jami.saffioti@gmail.com')
+ALLOWED_EMAILS = _email_set('ALLOWED_EMAILS', 'novanoros@gmail.com') | TEACHER_EMAILS
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
@@ -92,6 +108,30 @@ def init_db():
                   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                   FOREIGN KEY (user_id) REFERENCES users (id))''')
     
+    # Role (student | teacher), added after launch, so migrate in place.
+    cols = [r[1] for r in c.execute('PRAGMA table_info(users)')]
+    if 'role' not in cols:
+        c.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student'")
+
+    # Check the AI: one row per submitted attempt. This is the evidence trail.
+    c.execute('''CREATE TABLE IF NOT EXISTS attempts
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  user_id INTEGER NOT NULL,
+                  task_id TEXT NOT NULL,
+                  attempt_no INTEGER NOT NULL,
+                  flags_selected TEXT NOT NULL,
+                  submitted_code TEXT NOT NULL,
+                  explanation_text TEXT,
+                  test_results TEXT NOT NULL,
+                  dimensions TEXT NOT NULL,
+                  score INTEGER NOT NULL,
+                  passed INTEGER NOT NULL,
+                  evidence TEXT NOT NULL,
+                  started_at TEXT,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (user_id) REFERENCES users (id))''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_attempts_user ON attempts (user_id, task_id)')
+
     conn.commit()
     conn.close()
 
@@ -113,6 +153,16 @@ def login_required(f):
                 return jsonify({'success': False, 'error': 'Not logged in'}), 401
             # Otherwise redirect to home (which shows login)
             return redirect('/')
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def teacher_required(f):
+    @wraps(f)
+    @login_required
+    def decorated_function(*args, **kwargs):
+        if session.get('role') != 'teacher':
+            return redirect('/dashboard')
         return f(*args, **kwargs)
     return decorated_function
 
@@ -347,6 +397,7 @@ def google_callback():
 
     google_id = user_info.get('sub')
     email = (user_info.get('email') or '').lower()
+    canon = _canon_email(email)
     name = user_info.get('name')
     picture = user_info.get('picture')
 
@@ -354,7 +405,7 @@ def google_callback():
         return jsonify({'success': False, 'error': 'Missing credentials'}), 401
     
     # Check email whitelist
-    if email not in ALLOWED_EMAILS:
+    if canon not in ALLOWED_EMAILS:
         return jsonify({
             'success': False, 
             'error': 'auth_failed',
@@ -365,18 +416,19 @@ def google_callback():
     db = get_db()
     user = db.execute('SELECT * FROM users WHERE google_id = ?', (google_id,)).fetchone()
     
+    role = 'teacher' if canon in TEACHER_EMAILS else 'student'
     if user is None:
         db.execute(
-            'INSERT INTO users (google_id, email, name, picture) VALUES (?, ?, ?, ?)',
-            (google_id, email, name, picture)
+            'INSERT INTO users (google_id, email, name, picture, role) VALUES (?, ?, ?, ?, ?)',
+            (google_id, email, name, picture, role)
         )
         db.commit()
         user = db.execute('SELECT * FROM users WHERE google_id = ?', (google_id,)).fetchone()
     else:
-        # Update user info in case it changed
+        # Update user info (and role, which comes from TEACHER_EMAILS) in case it changed
         db.execute(
-            'UPDATE users SET email = ?, name = ?, picture = ? WHERE google_id = ?',
-            (email, name, picture, google_id)
+            'UPDATE users SET email = ?, name = ?, picture = ?, role = ? WHERE google_id = ?',
+            (email, name, picture, role, google_id)
         )
         db.commit()
     
@@ -385,6 +437,7 @@ def google_callback():
     session['email'] = email
     session['name'] = name
     session['picture'] = picture
+    session['role'] = role
     
     db.close()
     
@@ -434,7 +487,8 @@ def dashboard():
     return render_template('dashboard.html', 
                          subjects=SUBJECTS, 
                          user=user, 
-                         conversations=conv_list)
+                         conversations=conv_list,
+                         is_teacher=session.get('role') == 'teacher')
 
 @app.route('/chat/<subject>')
 @login_required
@@ -1001,15 +1055,93 @@ def lab():
 # ── Check the AI: slop-detector tasks (AP CSP, competency C2) ──
 from slop_detector.harness.loader import load_task as load_slop_task  # noqa: E402
 from slop_detector.harness.scorer import score as score_slop  # noqa: E402
+from slop_detector.harness.executor import SandboxUnavailable  # noqa: E402
+from slop_detector.harness.loader import defect_line_map  # noqa: E402
 
-SLOP_TASKS = {'csp-slop-01', 'csp-slop-02'}
-SLOP_DEFECT_TYPES = ['functional_bug', 'edge_case', 'hallucination', 'intent_gap', 'trap_correct']
+# The order students see. To add a task: put its JSON in slop_detector/tasks/
+# and add its id here.
+SLOP_TASK_ORDER = ['csp-slop-01', 'csp-slop-02', 'csp-slop-03', 'csp-slop-04', 'csp-slop-05']
+SLOP_TASKS = set(SLOP_TASK_ORDER)
+SLOP_DEFECT_TYPES = ['functional_bug', 'edge_case', 'hallucination', 'intent_gap', 'false_claim']
+SLOP_DIMENSIONS = ['detection', 'diagnosis', 'correction', 'verification', 'calibration']
+MAX_CODE_CHARS = 20000
+MAX_FLAGS = 20
+MAX_TEXT_CHARS = 4000
+
+if os.environ.get('RENDER') and os.environ.get('EXECUTOR', 'local').lower() != 'judge0':
+    print('WARNING: Check the AI is running student code WITHOUT a sandbox. '
+          'Set EXECUTOR=judge0 and JUDGE0_URL/JUDGE0_KEY before real students use it.')
+
+try:
+    from zoneinfo import ZoneInfo
+    _LOCAL_TZ = ZoneInfo(os.environ.get('TIMEZONE', 'America/New_York'))
+except Exception:  # pragma: no cover
+    _LOCAL_TZ = None
+
+
+@app.template_filter('localtime')
+def _localtime(value, short=False):
+    """SQLite stores UTC; show it in the teacher's time zone."""
+    if not value:
+        return ''
+    try:
+        dt = datetime.fromisoformat(str(value).replace('Z', '')).replace(tzinfo=timezone.utc)
+        if _LOCAL_TZ:
+            dt = dt.astimezone(_LOCAL_TZ)
+        return dt.strftime('%b %-d · %-I:%M %p' if short else '%b %-d, %Y · %-I:%M %p')
+    except ValueError:
+        return value
+
+
+@app.template_filter('py')
+def _py(value):
+    """Show test inputs/outputs the way Python writes them (True, not true)."""
+    if isinstance(value, list) and len(value) == 1:
+        return repr(value[0])
+    if isinstance(value, list):
+        return ', '.join(repr(v) for v in value)
+    return repr(value)
+
+
+def _slop_task_list():
+    out = []
+    for i, tid in enumerate(SLOP_TASK_ORDER, start=1):
+        t = load_slop_task(tid)
+        out.append({'id': tid, 'n': i, 'title': t.get('title', tid), 'prompt': t['prompt']})
+    return out
+
+
+def _progress(db, user_id):
+    """Per task for one student: attempts, passed (on any attempt), best and latest."""
+    rows = db.execute(
+        'SELECT task_id, attempt_no, score, passed, created_at FROM attempts '
+        'WHERE user_id = ? ORDER BY id', (user_id,)).fetchall()
+    prog = {tid: {'attempts': 0, 'passed': False, 'best': None, 'last': None}
+            for tid in SLOP_TASK_ORDER}
+    for r in rows:
+        p = prog.get(r['task_id'])
+        if p is None:
+            continue
+        p['attempts'] += 1
+        p['passed'] = p['passed'] or bool(r['passed'])
+        p['best'] = r['score'] if p['best'] is None else max(p['best'], r['score'])
+        p['last'] = r['created_at']
+    passed = sum(1 for p in prog.values() if p['passed'])
+    return prog, passed
 
 
 @app.route('/check')
 @login_required
 def check():
-    return render_template('check.html')
+    tasks = _slop_task_list()
+    db = get_db()
+    prog, passed = _progress(db, session['user_id'])
+    db.close()
+    task_id = request.args.get('task')
+    if task_id in SLOP_TASKS:
+        return render_template('check.html', tasks=tasks, task_id=task_id, progress=prog)
+    return render_template('check_list.html', tasks=tasks, progress=prog,
+                           passed=passed, total=len(tasks))
 
 
 @app.route('/check/api/task/<task_id>')
@@ -1018,30 +1150,147 @@ def check_task(task_id):
     if task_id not in SLOP_TASKS:
         return jsonify({'error': 'Unknown task'}), 404
     task = load_slop_task(task_id)
+    # Server-side start time for the evidence trail (first time the task opens).
+    opened = dict(session.get('task_opened') or {})
+    opened.setdefault(task_id, datetime.now(timezone.utc).replace(tzinfo=None).isoformat(timespec='seconds'))
+    session['task_opened'] = opened
     # Student-safe view only: the answer key never leaves the server.
     return jsonify({
-        'task_id': task['task_id'], 'prompt': task['prompt'], 'language': task['language'],
+        'task_id': task['task_id'], 'title': task.get('title', task_id),
+        'prompt': task['prompt'], 'language': task['language'],
         'entrypoint': task['entrypoint'], 'buggy_code': task['buggy_code'],
         'defect_types': SLOP_DEFECT_TYPES,
     })
 
 
+def _clean_submission(raw):
+    """Keep only what the scorer needs, in the shapes it expects."""
+    flags = []
+    for f in (raw.get('flags') or [])[:MAX_FLAGS]:
+        if not isinstance(f, dict):
+            continue
+        try:
+            line = int(f.get('line'))
+        except (TypeError, ValueError):
+            continue
+        claimed = f.get('claimed_type') if f.get('claimed_type') in SLOP_DEFECT_TYPES else None
+        flags.append({'line': line, 'claimed_type': claimed,
+                      'explanation': str(f.get('explanation') or '')[:MAX_TEXT_CHARS]})
+    code = raw.get('edited_code')
+    if not isinstance(code, str) or not code.strip() or len(code) > MAX_CODE_CHARS:
+        return None
+    return {'task_id': raw.get('task_id'), 'flags': flags, 'edited_code': code,
+            'explanation': str(raw.get('explanation') or '')[:MAX_TEXT_CHARS]}
+
+
 @app.route('/check/api/submit', methods=['POST'])
 @login_required
 def check_submit():
-    submission = request.get_json(silent=True) or {}
-    if submission.get('task_id') not in SLOP_TASKS:
+    raw = request.get_json(silent=True) or {}
+    if raw.get('task_id') not in SLOP_TASKS:
         return jsonify({'error': 'Unknown task'}), 404
+    submission = _clean_submission(raw)
+    if submission is None:
+        return jsonify({'error': 'Your code is empty or too long.'}), 400
     submission['student_id'] = str(session['user_id'])  # never trust the browser for identity
-    result = score_slop(load_slop_task(submission['task_id']), submission)
+    task = load_slop_task(submission['task_id'])
+    try:
+        result = score_slop(task, submission)
+    except SandboxUnavailable as e:
+        app.logger.error('Sandbox unavailable: %s', e)
+        return jsonify({'error': "The code runner didn't answer. Nothing was saved; "
+                                 "please try again in a minute."}), 503
+
+    db = get_db()
+    n = db.execute('SELECT COUNT(*) FROM attempts WHERE user_id = ? AND task_id = ?',
+                   (session['user_id'], task['task_id'])).fetchone()[0]
+    db.execute(
+        '''INSERT INTO attempts (user_id, task_id, attempt_no, flags_selected, submitted_code,
+           explanation_text, test_results, dimensions, score, passed, evidence, started_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        (session['user_id'], task['task_id'], n + 1, json.dumps(submission['flags']),
+         submission['edited_code'], submission['explanation'],
+         json.dumps(result.evidence['tests']), json.dumps(result.dimensions),
+         sum(result.dimensions.values()), int(result.passed), json.dumps(result.evidence),
+         (session.get('task_opened') or {}).get(task['task_id'])))
+    db.commit()
+    _, passed = _progress(db, session['user_id'])
+    db.close()
+
     return jsonify({
         'task_id': result.task_id,
-        'student_id': result.student_id,
         'dimensions': result.dimensions,
         'passed': result.passed,
+        'attempt_no': n + 1,
+        'overall': {'passed': passed, 'total': len(SLOP_TASK_ORDER)},
         'evidence': {k: result.evidence[k] for k in
                      ('tests_passed', 'trap_flagged', 'regressions', 'flags_matched')},
     })
+
+
+# ── Teacher view: roster + each student's evidence trail ──
+@app.route('/teacher')
+@teacher_required
+def teacher():
+    tasks = _slop_task_list()
+    db = get_db()
+    people = db.execute(
+        '''SELECT u.id, u.name, u.email, u.role, MAX(a.created_at) AS last_active
+           FROM users u LEFT JOIN attempts a ON a.user_id = u.id
+           WHERE u.role = 'student' OR a.id IS NOT NULL
+           GROUP BY u.id ORDER BY u.role DESC, LOWER(u.name)''').fetchall()
+    roster = []
+    for p in people:
+        prog, passed = _progress(db, p['id'])
+        roster.append({'id': p['id'], 'name': p['name'] or p['email'], 'email': p['email'],
+                       'role': p['role'], 'last_active': p['last_active'],
+                       'progress': prog, 'passed': passed,
+                       'attempts': sum(x['attempts'] for x in prog.values())})
+    db.close()
+    return render_template('teacher.html', tasks=tasks, roster=roster)
+
+
+@app.route('/teacher/student/<int:user_id>')
+@teacher_required
+def teacher_student(user_id):
+    db = get_db()
+    person = db.execute('SELECT id, name, email, role FROM users WHERE id = ?',
+                        (user_id,)).fetchone()
+    if person is None:
+        db.close()
+        return redirect('/teacher')
+    rows = db.execute('SELECT * FROM attempts WHERE user_id = ? ORDER BY task_id, id DESC',
+                      (user_id,)).fetchall()
+    prog, passed = _progress(db, user_id)
+    db.close()
+    by_task = {tid: [] for tid in SLOP_TASK_ORDER}
+    for r in rows:
+        if r['task_id'] not in by_task:
+            continue
+        by_task[r['task_id']].append({
+            'attempt_no': r['attempt_no'], 'score': r['score'], 'passed': bool(r['passed']),
+            'dimensions': json.loads(r['dimensions']), 'flags': json.loads(r['flags_selected']),
+            'code': r['submitted_code'], 'explanation': r['explanation_text'],
+            'tests': json.loads(r['test_results']), 'evidence': json.loads(r['evidence']),
+            'started_at': r['started_at'], 'created_at': r['created_at'],
+        })
+    tasks = []
+    for t in _slop_task_list():
+        full = load_slop_task(t['id'])
+        # Teacher-only: mark each flag against the answer key.
+        line_map = defect_line_map(full)
+        lines = full['buggy_code'].splitlines()
+        for a in by_task[t['id']]:
+            for f in a['flags']:
+                d = line_map.get(f.get('line'))
+                f['line_text'] = lines[f['line'] - 1].strip() if 0 < f.get('line', 0) <= len(lines) else ''
+                f['hit'] = 'trap' if d and d['is_trap'] else ('bug' if d else 'miss')
+                f['type_ok'] = bool(d and not d['is_trap'] and f.get('claimed_type') == d['type'])
+        tasks.append({**t, 'buggy_code': full['buggy_code'], 'attempts': by_task[t['id']],
+                      'progress': prog[t['id']]})
+    return render_template('teacher_student.html', person=person, tasks=tasks,
+                           passed=passed, total=len(tasks), dims=SLOP_DIMENSIONS)
+
 
 @app.route('/auth/google/redirect')
 def google_redirect():

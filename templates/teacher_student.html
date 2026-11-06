@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+{% include 'partials/head.html' %}
+<title>{{ person.name or person.email }} · Class results</title>
+<style>
+  main { max-width: 1080px; margin: 0 auto; padding: 48px 32px 96px; }
+  .hero { padding: 0 0 28px; border-bottom: var(--rule); margin-bottom: 28px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .hero .eyebrow { margin-bottom: 12px; }
+  .hero .display { font-size: clamp(30px, 4.2vw, 46px); }
+  .hero small { color: var(--text-muted); }
+  .tally .big { font-family: var(--font-display); font-size: 40px; font-weight: 600; line-height: 1; text-align: right; }
+  .tally .big em { color: var(--accent); font-style: normal; }
+  .tally small { display: block; text-align: right; font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+  section.task { margin-bottom: 36px; }
+  .task-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .task-head h2 { font-family: var(--font-display); font-size: 24px; font-weight: 600; margin: 0; }
+  .task-head .st { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+  .st.pass { color: var(--positive); } .st.tried { color: var(--negative); } .st.none { color: var(--text-muted); }
+  details.attempt { border-bottom: var(--rule); }
+  details.attempt:last-child { border-bottom: 0; }
+  details.attempt summary { display: grid; grid-template-columns: 110px 90px 1fr auto; gap: 16px; align-items: center; padding: 14px 20px; cursor: pointer; list-style: none; font-size: 13px; }
+  details.attempt summary::-webkit-details-marker { display: none; }
+  details.attempt summary:hover { background: color-mix(in srgb, var(--surface) 60%, transparent); }
+  .v { font-weight: 600; } .v.pass { color: var(--positive); } .v.fail { color: var(--negative); }
+  .pips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .pip { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+  .pip b { color: var(--text-primary); } .pip.low b { color: var(--negative); }
+  .when { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+  .body { padding: 6px 20px 22px; display: grid; gap: 18px; }
+  .lbl { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+  .flag { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 10px 0; border-top: var(--rule); font-size: 13px; }
+  .flag:first-of-type { border-top: 0; }
+  .flag .ln { font-family: var(--font-label); font-size: 10px; font-weight: 700; padding-top: 2px; }
+  .flag code { display: block; font-family: "DM Mono", monospace; font-size: 12px; color: var(--text-secondary); margin: 2px 0 4px; white-space: pre-wrap; }
+  .hit { font-size: 11px; font-weight: 600; }
+  .hit.bug { color: var(--positive); } .hit.trap { color: var(--negative); } .hit.miss { color: var(--text-muted); }
+  .why { color: var(--text-primary); font-size: 12.5px; }
+  pre.code { margin: 0; padding: 14px 16px; background: var(--cream); border: var(--rule); font-family: "DM Mono", monospace; font-size: 13px; line-height: 1.55; overflow-x: auto; }
+  table.tests { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.tests td, table.tests th { text-align: left; padding: 6px 8px; border-bottom: var(--rule); font-family: "DM Mono", monospace; }
+  table.tests th { font-family: var(--font-label); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-secondary); }
+  .ok { color: var(--positive); } .no { color: var(--negative); }
+  .explain { font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; }
+  .meta { font-size: 12px; color: var(--text-secondary); }
+  .none { color: var(--text-muted); font-style: italic; font-size: 13px; padding: 18px 20px; }
+  @media (max-width: 720px) {
+    main { padding: 32px 16px 64px; }
+    details.attempt summary { grid-template-columns: 1fr 1fr; }
+    .tally .big, .tally small { text-align: left; }
+  }
+</style>
+</head>
+<body>
+{% set back = ('/teacher', 'Class results') %}
+{% include 'partials/bar.html' %}
+{% set dim_names = {'detection': 'Detection', 'diagnosis': 'Diagnosis', 'correction': 'Correction', 'verification': 'Verification', 'calibration': 'Judgment'} %}
+{% set type_names = {'functional_bug': 'Logic bug', 'edge_case': 'Edge case', 'hallucination': 'Made-up code', 'intent_gap': 'Wrong problem', 'false_claim': "Says it does something it doesn't"} %}
+<main>
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Evidence · Check the AI · AP CSP</div>
+      <h1 class="display">{{ person.name or person.email }}</h1>
+      <small>{{ person.email }}</small>
+    </div>
+    <div class="tally">
+      <div class="big"><em>{{ passed }}</em> of {{ total }}</div>
+      <small>tasks passed</small>
+    </div>
+  </div>
+
+  {% for t in tasks %}
+  <section class="task">
+    <div class="task-head">
+      <h2>Task {{ t.n }} · {{ t.title }}</h2>
+      {% if t.progress.passed %}<span class="st pass">Passed</span>
+      {% elif t.attempts %}<span class="st tried">Not yet</span>
+      {% else %}<span class="st none">Not started</span>{% endif %}
+    </div>
+    <div class="glass">
+      {% if not t.attempts %}
+      <div class="none">No attempts yet.</div>
+      {% endif %}
+      {% for a in t.attempts %}
+      <details class="attempt" {% if loop.first %}open{% endif %}>
+        <summary>
+          <span>Attempt {{ a.attempt_no }}</span>
+          <span class="v {{ 'pass' if a.passed else 'fail' }}">{{ 'Pass' if a.passed else 'Not yet' }} · {{ a.score }}/20</span>
+          <span class="pips">
+            {% for d in dims %}<span class="pip {{ 'low' if a.dimensions[d] < 3 }}">{{ dim_names[d] }} <b>{{ a.dimensions[d] }}</b></span>{% endfor %}
+          </span>
+          <span class="when">{{ a.created_at|localtime }}</span>
+        </summary>
+        <div class="body">
+          <div>
+            <div class="lbl">Lines flagged ({{ a.flags|length }})</div>
+            {% for f in a.flags %}
+            <div class="flag">
+              <div class="ln">Line {{ f.line }}</div>
+              <div>
+                <code>{{ f.line_text }}</code>
+                <span class="hit {{ f.hit }}">
+                  {% if f.hit == 'bug' %}Real mistake ✓{% elif f.hit == 'trap' %}Flagged correct code ✗{% else %}Nothing wrong on this line{% endif %}
+                </span>
+                <span class="meta"> · called it "{{ type_names.get(f.claimed_type, f.claimed_type or 'no type') }}"{% if f.hit == 'bug' %}{{ ' ✓' if f.type_ok else ' (wrong type)' }}{% endif %}</span>
+                {% if f.explanation %}<div class="why">{{ f.explanation }}</div>{% endif %}
+              </div>
+            </div>
+            {% else %}
+            <div class="meta">No lines flagged.</div>
+            {% endfor %}
+            {% if a.evidence.false_positives is defined %}<div class="meta" style="margin-top:8px">Flags on clean lines: {{ a.evidence.false_positives }} · trap code kept in the fix: {{ 'yes' if a.evidence.trap_present else 'no' }} · regressions: {{ a.evidence.regressions }}</div>{% endif %}
+          </div>
+          <div>
+            <div class="lbl">Their explanation</div>
+            {% if a.explanation %}<div class="explain">{{ a.explanation }}</div>{% else %}<div class="meta">None written.</div>{% endif %}
+          </div>
+          <div>
+            <div class="lbl">Code they submitted</div>
+            <pre class="code">{{ a.code }}</pre>
+          </div>
+          <div>
+            <div class="lbl">Hidden tests · {{ a.evidence.tests_passed }} passed</div>
+            <table class="tests">
+              <tr><th>Input</th><th>Expected</th><th>Got</th><th></th></tr>
+              {% for r in a.tests %}
+              <tr><td>{{ r.input|py }}</td><td>{{ r.expected|py }}</td>
+                <td>{% if r.error %}{{ r.error }}{% else %}{{ r.got|py }}{% endif %}</td>
+                <td class="{{ 'ok' if r.passed else 'no' }}">{{ '✓' if r.passed else '✗' }}</td></tr>
+              {% endfor %}
+            </table>
+          </div>
+          <div class="meta">Task opened {{ a.started_at|localtime if a.started_at else '—' }} · submitted {{ a.created_at|localtime }}</div>
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</main>
+</body>
+</html>

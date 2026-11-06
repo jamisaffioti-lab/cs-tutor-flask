@@ -1,0 +1,72 @@
+{
+  "task_id": "csp-slop-04",
+  "competency": "C2",
+  "language": "python",
+  "entrypoint": "is_palindrome",
+  "title": "Palindrome",
+  "prompt": "Return True if word reads the same forwards and backwards, ignoring capitalization (so \"Racecar\" counts). Otherwise return False.",
+  "buggy_code": "def is_palindrome(word):\n    # convert to lowercase so the check ignores capitalization\n    backwards = word[::-1]\n    return word == backwards\n",
+  "defects": [
+    {
+      "id": "d1",
+      "type": "false_claim",
+      "locator": "# convert to lowercase",
+      "also_on": [
+        "return word == backwards"
+      ],
+      "is_trap": false,
+      "note": "The comment says the code lowercases the word, but nothing calls .lower(), so \"Racecar\" returns False. Flagging the comment or the comparison line both count."
+    },
+    {
+      "id": "d2",
+      "type": "trap_correct",
+      "locator": "backwards = word[::-1]",
+      "is_trap": true,
+      "signature": "[::-1]",
+      "note": "[::-1] looks strange but is the standard, correct way to reverse a string in Python."
+    }
+  ],
+  "hidden_tests": [
+    {
+      "input": [
+        "racecar"
+      ],
+      "expected": true,
+      "catches": []
+    },
+    {
+      "input": [
+        "Racecar"
+      ],
+      "expected": true,
+      "catches": [
+        "d1"
+      ]
+    },
+    {
+      "input": [
+        "hello"
+      ],
+      "expected": false,
+      "catches": []
+    },
+    {
+      "input": [
+        "Noon"
+      ],
+      "expected": true,
+      "catches": [
+        "d1"
+      ]
+    },
+    {
+      "input": [
+        "a"
+      ],
+      "expected": true,
+      "catches": []
+    }
+  ],
+  "reference_solution": "def is_palindrome(word):\n    # convert to lowercase so the check ignores capitalization\n    word = word.lower()\n    backwards = word[::-1]\n    return word == backwards\n",
+  "rubric_id": "c2-slop-detector-v1"
+}

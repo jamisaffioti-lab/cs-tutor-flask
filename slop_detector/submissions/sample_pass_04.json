@@ -1,0 +1,12 @@
+{
+  "task_id": "csp-slop-04",
+  "flags": [
+    {
+      "line": 2,
+      "claimed_type": "false_claim",
+      "explanation": "comment says lowercase but code never lowercases"
+    }
+  ],
+  "edited_code": "def is_palindrome(word):\n    # convert to lowercase so the check ignores capitalization\n    word = word.lower()\n    backwards = word[::-1]\n    return word == backwards\n",
+  "student_id": "demo"
+}

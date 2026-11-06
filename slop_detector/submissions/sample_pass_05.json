@@ -1,0 +1,12 @@
+{
+  "task_id": "csp-slop-05",
+  "flags": [
+    {
+      "line": 3,
+      "claimed_type": "functional_bug",
+      "explanation": "count resets inside the loop"
+    }
+  ],
+  "edited_code": "def count_vowels(text):\n    count = 0\n    for ch in text.lower():\n        if ch in \"aeiou\":\n            count += 1\n    return count\n",
+  "student_id": "demo"
+}
