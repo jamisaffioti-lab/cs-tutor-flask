@@ -1,0 +1,12 @@
+{
+  "task_id": "csp-slop-03",
+  "flags": [
+    {
+      "line": 2,
+      "claimed_type": "edge_case",
+      "explanation": "starts at 0, wrong for all-negative lists"
+    }
+  ],
+  "edited_code": "def largest(nums):\n    biggest = nums[0]\n    for n in nums:\n        if n > biggest:\n            biggest = n\n    return biggest\n",
+  "student_id": "demo"
+}

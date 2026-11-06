@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+{% include 'partials/head.html' %}
+<title>Check the AI · Ascent Scholars</title>
+<style>
+  main { max-width: 960px; margin: 0 auto; padding: 48px 32px 96px; }
+  .hero { padding: 0 0 36px; border-bottom: var(--rule); margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .hero .eyebrow { margin-bottom: 12px; }
+  .hero .display { font-size: clamp(32px, 4.5vw, 52px); }
+  .hero .lede { max-width: 540px; margin-top: 8px; }
+  .tally { text-align: right; }
+  .tally .big { font-family: var(--font-display); font-size: 44px; font-weight: 600; line-height: 1; }
+  .tally .big em { color: var(--accent); font-style: normal; }
+  .tally small { display: block; color: var(--text-secondary); font-size: 12px; margin-top: 6px; }
+  .list { display: grid; gap: 12px; }
+  .task { display: grid; grid-template-columns: 52px 1fr auto; gap: 18px; align-items: center; padding: 18px 22px; text-decoration: none; color: inherit; }
+  .task .num { font-family: var(--font-display); font-size: 28px; font-weight: 600; color: var(--text-muted); }
+  .task .title { font-family: var(--font-display); font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .task .prompt { color: var(--text-secondary); font-size: 12.5px; line-height: 1.55; }
+  .status { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; white-space: nowrap; text-align: right; }
+  .status small { display: block; font-family: var(--font-body); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .status.pass { color: var(--positive); } .status.tried { color: var(--negative); } .status.new { color: var(--text-secondary); }
+  .how { margin-top: 36px; color: var(--text-secondary); font-size: 12.5px; line-height: 1.7; max-width: 640px; }
+  @media (max-width: 620px) {
+    main { padding: 32px 16px 64px; }
+    .task { grid-template-columns: 1fr; gap: 6px; }
+    .task .num { display: none; }
+    .status, .tally { text-align: left; }
+  }
+</style>
+</head>
+<body>
+{% set back = ('/dashboard', 'Dashboard') %}
+{% include 'partials/bar.html' %}
+<main>
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Working with AI · AP CSP</div>
+      <h1 class="display">Check the AI's <em>code.</em></h1>
+      <p class="lede">An AI wrote each of these. Find what it got wrong, fix it, and leave what it got right alone.</p>
+    </div>
+    <div class="tally">
+      <div class="big"><em>{{ passed }}</em> of {{ total }}</div>
+      <small>tasks passed</small>
+    </div>
+  </div>
+
+  <div class="list">
+    {% for t in tasks %}
+    {% set p = progress[t.id] %}
+    <a class="glass task" href="/check?task={{ t.id }}">
+      <div class="num">{{ t.n }}</div>
+      <div>
+        <div class="title">{{ t.title }}</div>
+        <div class="prompt">{{ t.prompt }}</div>
+      </div>
+      {% if p.passed %}
+      <div class="status pass">Passed ✓<small>{{ p.attempts }} attempt{{ 's' if p.attempts != 1 }}</small></div>
+      {% elif p.attempts %}
+      <div class="status tried">Not yet<small>{{ p.attempts }} attempt{{ 's' if p.attempts != 1 }}</small></div>
+      {% else %}
+      <div class="status new">Start →</div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <p class="how">Each task is scored on five things: finding the real mistakes, naming what kind they are,
+    fixing the code, not breaking what already worked, and leaving the correct code alone. You pass a task
+    with level 3 or higher on all five. You can try as many times as you like; every attempt is saved.</p>
+</main>
+</body>
+</html>

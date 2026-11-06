@@ -40,7 +40,11 @@ def score(task: dict, submission: dict, executor: Executor | None = None) -> Sco
     matched: dict[str, dict] = {}   # defect_id -> the flag that matched it
     false_positives = 0             # flag on a clean line
     trap_flagged = False
+    seen_lines: set = set()
     for flag in submission.get("flags", []):
+        if flag.get("line") in seen_lines:
+            continue                # the same line flagged twice counts once
+        seen_lines.add(flag.get("line"))
         defect = line_map.get(flag.get("line"))
         if defect is None:
             false_positives += 1
@@ -56,9 +60,7 @@ def score(task: dict, submission: dict, executor: Executor | None = None) -> Sco
     fixed = executor.execute(
         submission["edited_code"], task["language"],
         task["entrypoint"], task["hidden_tests"])
-    buggy = executor.execute(
-        task["buggy_code"], task["language"],
-        task["entrypoint"], task["hidden_tests"])
+    buggy = _buggy_results(task, executor)
 
     n_tests = len(task["hidden_tests"])
     passed_fixed = sum(1 for r in fixed if r.passed)
@@ -99,6 +101,20 @@ def score(task: dict, submission: dict, executor: Executor | None = None) -> Sco
         },
     )
     return result
+
+
+# The AI's buggy code gives the same results every time, so run it once per
+# task per process instead of on every submission (halves sandbox calls).
+_BUGGY_CACHE: dict[tuple, list] = {}
+
+
+def _buggy_results(task: dict, executor: Executor) -> list:
+    key = (task["task_id"], task["buggy_code"], type(executor).__name__)
+    if key not in _BUGGY_CACHE:
+        _BUGGY_CACHE[key] = executor.execute(
+            task["buggy_code"], task["language"],
+            task["entrypoint"], task["hidden_tests"])
+    return _BUGGY_CACHE[key]
 
 
 def _detection(coverage: float, false_positives: int) -> int:

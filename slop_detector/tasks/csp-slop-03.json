@@ -1,0 +1,90 @@
+{
+  "task_id": "csp-slop-03",
+  "competency": "C2",
+  "language": "python",
+  "entrypoint": "largest",
+  "title": "Largest number",
+  "prompt": "Return the biggest number in a non-empty list of integers. The list can contain negative numbers.",
+  "buggy_code": "def largest(nums):\n    biggest = 0\n    for n in nums:\n        if n > biggest:\n            biggest = n\n    return biggest\n",
+  "defects": [
+    {
+      "id": "d1",
+      "type": "edge_case",
+      "locator": "biggest = 0",
+      "is_trap": false,
+      "note": "Starting at 0 assumes every number is >= 0; an all-negative list returns 0, which isn't even in the list. Start from nums[0]."
+    },
+    {
+      "id": "d2",
+      "type": "trap_correct",
+      "locator": "if n > biggest:",
+      "is_trap": true,
+      "signature": "> biggest",
+      "note": "Strict > is correct: on a tie, the biggest value is already stored, so >= would change nothing."
+    }
+  ],
+  "hidden_tests": [
+    {
+      "input": [
+        [
+          -3,
+          -7,
+          -2
+        ]
+      ],
+      "expected": -2,
+      "catches": [
+        "d1"
+      ]
+    },
+    {
+      "input": [
+        [
+          5,
+          9,
+          2
+        ]
+      ],
+      "expected": 9,
+      "catches": []
+    },
+    {
+      "input": [
+        [
+          -1
+        ]
+      ],
+      "expected": -1,
+      "catches": [
+        "d1"
+      ]
+    },
+    {
+      "input": [
+        [
+          4,
+          4,
+          4
+        ]
+      ],
+      "expected": 4,
+      "catches": []
+    },
+    {
+      "input": [
+        [
+          -10,
+          -20,
+          -5,
+          -30
+        ]
+      ],
+      "expected": -5,
+      "catches": [
+        "d1"
+      ]
+    }
+  ],
+  "reference_solution": "def largest(nums):\n    biggest = nums[0]\n    for n in nums:\n        if n > biggest:\n            biggest = n\n    return biggest\n",
+  "rubric_id": "c2-slop-detector-v1"
+}

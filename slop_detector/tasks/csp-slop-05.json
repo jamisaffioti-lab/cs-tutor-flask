@@ -1,0 +1,73 @@
+{
+  "task_id": "csp-slop-05",
+  "competency": "C2",
+  "language": "python",
+  "entrypoint": "count_vowels",
+  "title": "Count vowels",
+  "prompt": "Return how many vowels (a, e, i, o, u) are in text, ignoring capitalization. An empty string has 0 vowels.",
+  "buggy_code": "def count_vowels(text):\n    for ch in text.lower():\n        count = 0\n        if ch in \"aeiou\":\n            count += 1\n    return count\n",
+  "defects": [
+    {
+      "id": "d1",
+      "type": "functional_bug",
+      "locator": "count = 0",
+      "is_trap": false,
+      "note": "count = 0 is inside the loop, so it resets on every character and the result is only ever 0 or 1 (and an empty string crashes). Move it above the loop."
+    },
+    {
+      "id": "d2",
+      "type": "trap_correct",
+      "locator": "if ch in \"aeiou\":",
+      "is_trap": true,
+      "signature": "in \"aeiou\"",
+      "note": "Checking membership in a string is correct Python: 'e' in \"aeiou\" is True."
+    }
+  ],
+  "hidden_tests": [
+    {
+      "input": [
+        "education"
+      ],
+      "expected": 5,
+      "catches": [
+        "d1"
+      ]
+    },
+    {
+      "input": [
+        "xyz"
+      ],
+      "expected": 0,
+      "catches": []
+    },
+    {
+      "input": [
+        "AEIOU"
+      ],
+      "expected": 5,
+      "catches": [
+        "d1"
+      ]
+    },
+    {
+      "input": [
+        ""
+      ],
+      "expected": 0,
+      "catches": [
+        "d1"
+      ]
+    },
+    {
+      "input": [
+        "Hello World"
+      ],
+      "expected": 3,
+      "catches": [
+        "d1"
+      ]
+    }
+  ],
+  "reference_solution": "def count_vowels(text):\n    count = 0\n    for ch in text.lower():\n        if ch in \"aeiou\":\n            count += 1\n    return count\n",
+  "rubric_id": "c2-slop-detector-v1"
+}

@@ -1,0 +1,12 @@
+{
+  "task_id": "csp-slop-03",
+  "flags": [
+    {
+      "line": 4,
+      "claimed_type": "functional_bug",
+      "explanation": "should be >="
+    }
+  ],
+  "edited_code": "def largest(nums):\n    biggest = 0\n    for n in nums:\n        if n >= biggest:\n            biggest = n\n    return biggest\n",
+  "student_id": "demo"
+}

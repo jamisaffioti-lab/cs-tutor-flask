@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+{% include 'partials/head.html' %}
+<title>Class results · Ascent Scholars</title>
+<style>
+  main { max-width: 1180px; margin: 0 auto; padding: 48px 32px 96px; }
+  .hero { padding: 0 0 32px; border-bottom: var(--rule); margin-bottom: 28px; }
+  .hero .eyebrow { margin-bottom: 12px; }
+  .hero .display { font-size: clamp(32px, 4.5vw, 52px); }
+  .hero .lede { max-width: 640px; margin-top: 8px; }
+  .wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { font-family: var(--font-label); font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--text-secondary); text-align: left; padding: 14px 12px; border-bottom: var(--rule); white-space: nowrap; }
+  th.t { text-align: center; }
+  td { padding: 14px 12px; border-bottom: var(--rule); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  td.t { text-align: center; white-space: nowrap; }
+  .who a { color: var(--text-primary); font-weight: 600; text-decoration: none; }
+  .who a:hover { color: var(--accent); }
+  .who small { display: block; color: var(--text-muted); font-size: 11px; }
+  .tag { font-family: var(--font-label); font-size: 8px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-left: 6px; }
+  .cell { display: inline-block; min-width: 54px; padding: 4px 6px; font-size: 11.5px; }
+  .cell.pass { background: var(--pop-wash); color: var(--positive); font-weight: 600; }
+  .cell.tried { color: var(--negative); }
+  .cell.none { color: var(--text-muted); }
+  .cell small { display: block; color: var(--text-muted); font-size: 10px; font-weight: 400; }
+  .total { font-family: var(--font-display); font-size: 20px; font-weight: 600; white-space: nowrap; }
+  .muted { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+  .empty { padding: 36px 22px; color: var(--text-secondary); font-family: var(--font-display); font-style: italic; font-size: 18px; }
+  .key { margin-top: 20px; color: var(--text-secondary); font-size: 12px; line-height: 1.7; }
+  @media (max-width: 620px) { main { padding: 32px 16px 64px; } }
+</style>
+</head>
+<body>
+{% set back = ('/dashboard', 'Dashboard') %}
+{% include 'partials/bar.html' %}
+<main>
+  <div class="hero">
+    <div class="eyebrow">Teacher · Check the AI · AP CSP</div>
+    <h1 class="display">Class <em>results.</em></h1>
+    <p class="lede">Each student's result per task. Open a student to see the evidence behind every attempt:
+      the lines they flagged, the code they submitted, the test results and their own explanation.</p>
+  </div>
+
+  <div class="glass wrap">
+    {% if roster %}
+    <table>
+      <thead>
+        <tr>
+          <th>Student</th>
+          {% for t in tasks %}<th class="t" title="{{ t.title }}">Task {{ t.n }}</th>{% endfor %}
+          <th>Passed</th>
+          <th>Attempts</th>
+          <th>Last active</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in roster %}
+        <tr>
+          <td class="who"><a href="/teacher/student/{{ s.id }}">{{ s.name }}</a>{% if s.role == 'teacher' %}<span class="tag">Teacher</span>{% endif %}<small>{{ s.email }}</small></td>
+          {% for t in tasks %}
+          {% set p = s.progress[t.id] %}
+          <td class="t">
+            {% if p.passed %}<span class="cell pass">Pass<small>best {{ p.best }}/20 · {{ p.attempts }}×</small></span>
+            {% elif p.attempts %}<span class="cell tried">Not yet<small>best {{ p.best }}/20 · {{ p.attempts }}×</small></span>
+            {% else %}<span class="cell none">—</span>{% endif %}
+          </td>
+          {% endfor %}
+          <td><span class="total">{{ s.passed }}/{{ tasks|length }}</span></td>
+          <td>{{ s.attempts }}</td>
+          <td class="muted">{{ s.last_active|localtime(short=True) if s.last_active else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No students yet. They appear here after they sign in for the first time.</div>
+    {% endif %}
+  </div>
+
+  <p class="key">Pass = level 3 or higher on all five dimensions (detection, diagnosis, correction,
+    verification, judgment) on at least one attempt. Score = the five levels added up, out of 20.
+    "3×" means three attempts.</p>
+</main>
+</body>
+</html>

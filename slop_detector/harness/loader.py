@@ -27,9 +27,13 @@ def defect_line_map(task: dict) -> dict[int, dict]:
     lines = buggy_lines(task)
     out: dict[int, dict] = {}
     for defect in task["defects"]:
-        needle = defect["locator"].replace(" ", "")
-        for n, text in lines.items():
-            if needle in text.replace(" ", ""):
-                out[n] = defect
-                break
+        # A defect can live on more than one line (e.g. a comment that lies AND
+        # the line that should have done the work). `locator` is the main line;
+        # optional `also_on` lists other lines that count as the same defect.
+        for loc in [defect["locator"], *defect.get("also_on", [])]:
+            needle = loc.replace(" ", "")
+            for n, text in lines.items():
+                if needle in text.replace(" ", ""):
+                    out[n] = defect
+                    break
     return out

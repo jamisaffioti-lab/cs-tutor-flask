@@ -9,7 +9,7 @@
   .page-head .eyebrow { margin-bottom: 10px; }
   .page-head .display { font-size: clamp(32px, 4.5vw, 48px); }
   .page-head .lede { font-size: 17px; margin-top: 6px; }
-  .tasks { display: flex; gap: 2px; background: var(--grid-gap); border: var(--rule); }
+  .tasks { display: flex; flex-wrap: wrap; gap: 2px; background: var(--grid-gap); border: var(--rule); }
   .tasks a { font-family: var(--font-label); font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; text-decoration: none; color: var(--text-secondary); background: var(--surface); padding: 10px 16px; }
   .tasks a.on { background: var(--accent-fill); color: var(--on-accent); }
   @media (max-width: 940px) { main.check { grid-template-columns: 1fr; padding: 0 16px 48px; } .page-head { padding: 28px 16px 20px; } }
@@ -50,10 +50,25 @@
   .pip { width: 22px; height: 7px; background: var(--border-soft); }
   .pip.on { background: var(--accent-fill); } .pip.on.low { background: var(--negative); }
   .evi { font-size: 11.5px; color: var(--text-muted); margin-top: 10px; }
+  .tasks a .ok { color: var(--positive); margin-left: 4px; }
+  .tasks a.on .ok { color: var(--on-accent); }
+  .sub-h { font-family: var(--font-label); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .16em; color: var(--text-secondary); padding: 12px 18px; border-top: var(--rule); display: flex; justify-content: space-between; gap: 12px; }
+  .sub-h span { text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 400; font-size: 12px; }
+  #aiCode { margin: 0; padding: 8px 0; background: var(--cream); border-top: var(--rule); font-family: "DM Mono", monospace; font-size: 14px; line-height: 1.55; overflow-x: auto; }
+  #aiCode button { display: grid; grid-template-columns: 44px 1fr; width: 100%; text-align: left; background: transparent; border: 0; border-left: 3px solid transparent; padding: 1px 16px 1px 0; font: inherit; color: var(--text-primary); cursor: pointer; white-space: pre; }
+  #aiCode button:hover { background: var(--pop-wash); }
+  #aiCode button:focus-visible { outline: 2px solid var(--accent-fill); outline-offset: -2px; }
+  #aiCode button .n { color: var(--text-muted); text-align: right; padding-right: 14px; user-select: none; }
+  #aiCode button.flagged { background: color-mix(in srgb, var(--negative) 12%, transparent); border-left-color: var(--negative); }
+  .flag .top .ln { font-family: var(--font-label); font-size: 11px; font-weight: 700; color: var(--negative); padding-top: 22px; }
+  .flag code { display: block; font-family: "DM Mono", monospace; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; white-space: pre-wrap; }
+  .empty { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin: 0 0 4px; }
+  textarea#explain { min-height: 90px; resize: vertical; }
+  .next { display: block; margin-top: 12px; font-size: 12.5px; color: var(--accent); }
 </style>
 </head>
 <body>
-{% set back = ('/dashboard', 'Dashboard') %}
+{% set back = ('/check', 'All tasks') %}
 {% include 'partials/bar.html' %}
 
 <div class="page-head">
@@ -63,8 +78,10 @@
     <p class="lede">Prove you can build with AI, and catch its mistakes.</p>
   </div>
   <nav class="tasks" aria-label="Tasks">
-    <a href="/check?task=csp-slop-01" data-task="csp-slop-01">Task 1</a>
-    <a href="/check?task=csp-slop-02" data-task="csp-slop-02">Task 2</a>
+    <a href="/check">All tasks</a>
+    {% for t in tasks %}
+    <a href="/check?task={{ t.id }}" data-task="{{ t.id }}" class="{{ 'on' if t.id == task_id }}" title="{{ t.title }}">Task {{ t.n }}{% if progress[t.id].passed %}<span class="ok" aria-label="passed">✓</span>{% endif %}</a>
+    {% endfor %}
   </nav>
 </div>
 
@@ -73,16 +90,19 @@
     <h2>The challenge</h2>
     <div class="body">
       <ol class="steps">
-        <li><b>1</b> Spot what's wrong</li>
+        <li><b>1</b> Click the lines that are wrong</li>
         <li><b>2</b> Fix the code</li>
-        <li><b>3</b> Run &amp; score</li>
+        <li><b>3</b> Explain, then run &amp; score</li>
       </ol>
       <p id="prompt">Loading…</p>
       <p class="hint">An AI wrote the code below. Some of it is wrong — a logic slip, an unhandled case,
         a made-up function, or code that runs fine but solves the <em>wrong</em> problem. Some of it is
-        perfectly correct. Flag the real issues on the right, fix them in the editor, and don't "fix"
-        what isn't broken.</p>
+        perfectly correct. Click each line that's wrong to flag it, fix the code in the editor, and don't
+        "fix" what isn't broken.</p>
     </div>
+    <div class="sub-h">The AI's code <span>Click a line to flag it. Click again to unflag.</span></div>
+    <pre id="aiCode" aria-label="The AI's code. Each line is a button that flags it."></pre>
+    <div class="sub-h">Your fix <span>Edit the code here. This is what gets tested.</span></div>
     <div id="editorWrap">
       <div id="editor"></div>
       <textarea id="fallbackEditor" spellcheck="false"></textarea>
@@ -93,8 +113,15 @@
     <section class="card glass">
       <h2>Your flags</h2>
       <div class="body">
+        <p class="empty" id="noFlags">No flags yet. Click a line in the AI's code to flag it.</p>
         <div id="flags"></div>
-        <button class="add" id="addFlag">+ Add a flag</button>
+      </div>
+    </section>
+    <section class="card glass">
+      <h2>Your explanation</h2>
+      <div class="body">
+        <label class="mini" for="explain">In your own words: what did the AI get wrong, and how do you know your fix works?</label>
+        <textarea id="explain" placeholder="e.g. It started counting at index 1, so the first score was skipped. I checked with a list where only the first score passes."></textarea>
       </div>
     </section>
     <section class="card glass">
@@ -116,15 +143,16 @@
 
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.js"></script>
 <script>
-const TASK_ID = new URLSearchParams(location.search).get("task") || "csp-slop-01";
+const TASK_ID = {{ task_id|tojson }};
+const TASK_ORDER = {{ tasks|map(attribute='id')|list|tojson }};
 let editor = null, task = null;
-document.querySelectorAll(".tasks a").forEach(a => a.classList.toggle("on", a.dataset.task === TASK_ID));
 
 const TYPE_LABELS = {
   functional_bug: "Logic bug",
   edge_case: "Edge case not handled",
   hallucination: "Hallucinated / made-up code",
   intent_gap: "Solves the wrong problem",
+  false_claim: "Says it does something it doesn't",
 };
 const DIM_LABELS = {
   detection: ["Detection", "found the real issues"],
@@ -137,7 +165,7 @@ const DIM_LABELS = {
 async function loadTask() {
   task = await (await fetch(`/check/api/task/${encodeURIComponent(TASK_ID)}`)).json();
   document.getElementById("prompt").textContent = task.prompt;
-  addFlagRow();          // always show one flag row, independent of the editor
+  renderAiCode();
   initEditor();          // Monaco, with a plain-textarea fallback if the CDN is unreachable
 }
 
@@ -174,46 +202,87 @@ function accusationTypes() {
   return (task.defect_types || []).filter(t => t in TYPE_LABELS);
 }
 
-function addFlagRow() {
+function renderAiCode() {
+  const pre = document.getElementById("aiCode");
+  task.buggy_code.replace(/\n$/, "").split("\n").forEach((text, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.dataset.line = i + 1;
+    b.setAttribute("aria-pressed", "false");
+    b.innerHTML = `<span class="n">${i + 1}</span><span></span>`;
+    b.lastChild.textContent = text || " ";
+    b.onclick = () => toggleFlag(i + 1, text);
+    pre.appendChild(b);
+  });
+}
+
+function toggleFlag(line, text) {
+  const existing = document.querySelector(`.flag[data-line="${line}"]`);
+  if (existing) { removeFlag(line); return; }
   const wrap = document.getElementById("flags");
   const row = document.createElement("div");
-  row.className = "flag";
+  row.className = "flag"; row.dataset.line = line;
   const opts = accusationTypes().map(t => `<option value="${t}">${TYPE_LABELS[t]}</option>`).join("");
   row.innerHTML = `
     <div class="top">
-      <div><label class="mini">Line</label><input type="number" min="1" class="f-line" placeholder="#"/></div>
-      <div><label class="mini">What's wrong</label><select class="f-type">${opts}</select></div>
+      <div class="ln">Line ${line}</div>
+      <div><label class="mini">What's wrong</label><select class="f-type"><option value="">Pick one…</option>${opts}</select></div>
     </div>
+    <code></code>
     <label class="mini">Why (explain your reasoning)</label>
     <textarea class="f-why" placeholder="e.g. this skips the first item / crashes when the list is empty"></textarea>
-    <div class="row"><button class="del">Remove</button></div>`;
-  row.querySelector(".del").onclick = () => row.remove();
-  wrap.appendChild(row);
+    <div class="row"><button class="del" type="button">Remove</button></div>`;
+  row.querySelector("code").textContent = text.trim();
+  row.querySelector(".del").onclick = () => removeFlag(line);
+  // keep flags in line order
+  const after = [...wrap.children].find(r => +r.dataset.line > line);
+  wrap.insertBefore(row, after || null);
+  setLineState(line, true);
+  row.querySelector(".f-type").focus();
+}
+
+function removeFlag(line) {
+  const row = document.querySelector(`.flag[data-line="${line}"]`);
+  if (row) row.remove();
+  setLineState(line, false);
+}
+
+function setLineState(line, on) {
+  const b = document.querySelector(`#aiCode button[data-line="${line}"]`);
+  if (b) { b.classList.toggle("flagged", on); b.setAttribute("aria-pressed", String(on)); }
+  document.getElementById("noFlags").style.display = document.querySelector(".flag") ? "none" : "block";
 }
 
 function collectFlags() {
   return [...document.querySelectorAll(".flag")].map(r => ({
-    line: parseInt(r.querySelector(".f-line").value, 10),
-    claimed_type: r.querySelector(".f-type").value,
+    line: parseInt(r.dataset.line, 10),
+    claimed_type: r.querySelector(".f-type").value || null,
     explanation: r.querySelector(".f-why").value,
-  })).filter(f => Number.isInteger(f.line));
+  }));
 }
 
 async function submit() {
   const status = document.getElementById("status");
   status.textContent = "running your code and scoring…";
+  const flags = collectFlags();
+  if (flags.some(f => !f.claimed_type)) {
+    status.textContent = "Pick what's wrong for each flagged line first."; return;
+  }
+  const btn = document.getElementById("submit");
+  btn.disabled = true;
   const submission = {
-    task_id: TASK_ID, student_id: "local",
-    flags: collectFlags(), edited_code: getCode(),
-    submitted_at: new Date().toISOString(),
+    task_id: TASK_ID, flags, edited_code: getCode(),
+    explanation: document.getElementById("explain").value,
   };
   try {
-    const res = await (await fetch("/check/api/submit", {
+    const resp = await fetch("/check/api/submit", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(submission),
-    })).json();
-    render(res); status.textContent = "";
-  } catch (e) { status.textContent = "Couldn't reach the scorer — is the server running?"; }
+    });
+    const res = await resp.json();
+    if (!resp.ok) { status.textContent = res.error || "Something went wrong. Try again."; }
+    else { render(res); status.textContent = ""; }
+  } catch (e) { status.textContent = "Couldn't reach the scorer. Check your connection and try again."; }
+  finally { btn.disabled = false; }
 }
 
 function render(res) {
@@ -221,10 +290,14 @@ function render(res) {
   const banner = document.getElementById("banner");
   banner.className = "banner " + (res.passed ? "pass" : "fail");
   document.getElementById("verdict").textContent = res.passed ? "Passed ✦" : "Not yet";
-  document.getElementById("verdictSub").textContent = res.passed
-    ? "You cleared all five dimensions — you'd earn the credential on this task."
-    : "You need level 3+ on all five. See where to sharpen below.";
-  document.getElementById("score").innerHTML = Object.entries(res.dimensions).map(([k, v]) => {
+  document.getElementById("verdictSub").textContent = (res.passed
+    ? "You cleared all five dimensions on this task."
+    : "You need level 3+ on all five. See where to sharpen below.")
+    + ` Attempt ${res.attempt_no} · ${res.overall.passed} of ${res.overall.total} tasks passed so far.`;
+  const tab = document.querySelector(`.tasks a[data-task="${TASK_ID}"]`);
+  if (res.passed && tab && !tab.querySelector(".ok")) tab.insertAdjacentHTML("beforeend", '<span class="ok" aria-label="passed">✓</span>');
+  document.getElementById("score").innerHTML = Object.keys(DIM_LABELS).filter(k => k in res.dimensions).map(k => {
+    const v = res.dimensions[k];
     const [name, desc] = DIM_LABELS[k] || [k, ""];
     const pips = [1, 2, 3, 4].map(n => `<span class="pip ${n <= v ? "on" : ""} ${v < 3 ? "low" : ""}"></span>`).join("");
     return `<div class="dim"><div class="name">${name}<small>${desc}</small></div>
@@ -233,9 +306,14 @@ function render(res) {
   const ev = res.evidence;
   document.getElementById("evidence").textContent =
     `Tests passed ${ev.tests_passed} · flagged the correct code: ${ev.trap_flagged ? "yes (careful!)" : "no ✓"} · regressions: ${ev.regressions}`;
+  const i = TASK_ORDER.indexOf(TASK_ID);
+  const old = document.getElementById("nextLink"); if (old) old.remove();
+  const a = document.createElement("a"); a.id = "nextLink"; a.className = "next";
+  a.href = i + 1 < TASK_ORDER.length ? `/check?task=${TASK_ORDER[i + 1]}` : "/check";
+  a.textContent = i + 1 < TASK_ORDER.length ? "Next task →" : "Back to all tasks →";
+  document.getElementById("evidence").after(a);
 }
 
-document.getElementById("addFlag").onclick = addFlagRow;
 document.getElementById("submit").onclick = submit;
 loadTask();
 </script>

@@ -1,0 +1,12 @@
+{
+  "task_id": "csp-slop-04",
+  "flags": [
+    {
+      "line": 4,
+      "claimed_type": "false_claim",
+      "explanation": "compares without lowercasing"
+    }
+  ],
+  "edited_code": "def is_palindrome(word):\n    backwards = word[::-1]\n    return word.lower() == backwards.lower()\n",
+  "student_id": "demo"
+}
